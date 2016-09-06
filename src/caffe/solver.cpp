@@ -11,13 +11,13 @@
 
 namespace caffe {
 
-template<typename Dtype>
-void Solver<Dtype>::SetActionFunction(ActionCallback func) {
+template<typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::SetActionFunction(ActionCallback func) {
   action_request_function_ = func;
 }
 
-template<typename Dtype>
-SolverAction::Enum Solver<Dtype>::GetRequestedAction() {
+template<typename Dtype, typename Mtype>
+SolverAction::Enum Solver<Dtype,Mtype>::GetRequestedAction() {
   if (action_request_function_) {
     // If the external request function has been set, call it.
     return action_request_function_();
@@ -25,15 +25,15 @@ SolverAction::Enum Solver<Dtype>::GetRequestedAction() {
   return SolverAction::NONE;
 }
 
-template <typename Dtype>
-Solver<Dtype>::Solver(const SolverParameter& param, const Solver* root_solver)
+template <typename Dtype, typename Mtype>
+Solver<Dtype,Mtype>::Solver(const SolverParameter& param, const Solver* root_solver)
     : net_(), callbacks_(), root_solver_(root_solver),
       requested_early_exit_(false) {
   Init(param);
 }
 
-template <typename Dtype>
-Solver<Dtype>::Solver(const string& param_file, const Solver* root_solver)
+template <typename Dtype, typename Mtype>
+Solver<Dtype,Mtype>::Solver(const string& param_file, const Solver* root_solver)
     : net_(), callbacks_(), root_solver_(root_solver),
       requested_early_exit_(false) {
   SolverParameter param;
@@ -41,8 +41,8 @@ Solver<Dtype>::Solver(const string& param_file, const Solver* root_solver)
   Init(param);
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Init(const SolverParameter& param) {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Init(const SolverParameter& param) {
   CHECK(Caffe::root_solver() || root_solver_)
       << "root_solver_ needs to be set for all non-root solvers";
   LOG_IF(INFO, Caffe::root_solver()) << "Initializing solver from parameters: "
@@ -63,8 +63,8 @@ void Solver<Dtype>::Init(const SolverParameter& param) {
   current_step_ = 0;
 }
 
-template <typename Dtype>
-void Solver<Dtype>::InitTrainNet() {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::InitTrainNet() {
   const int num_train_nets = param_.has_net() + param_.has_net_param() +
       param_.has_train_net() + param_.has_train_net_param();
   const string& field_names = "net, net_param, train_net, train_net_param";
@@ -102,14 +102,14 @@ void Solver<Dtype>::InitTrainNet() {
   net_state.MergeFrom(param_.train_state());
   net_param.mutable_state()->CopyFrom(net_state);
   if (Caffe::root_solver()) {
-    net_.reset(new Net<Dtype>(net_param));
+    net_.reset(new Net<Dtype,Mtype>(net_param));
   } else {
-    net_.reset(new Net<Dtype>(net_param, root_solver_->net_.get()));
+    net_.reset(new Net<Dtype,Mtype>(net_param, root_solver_->net_.get()));
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::InitTestNets() {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::InitTestNets() {
   CHECK(Caffe::root_solver());
   const bool has_net_param = param_.has_net_param();
   const bool has_net_file = param_.has_net();
@@ -181,23 +181,23 @@ void Solver<Dtype>::InitTestNets() {
     LOG(INFO)
         << "Creating test net (#" << i << ") specified by " << sources[i];
     if (Caffe::root_solver()) {
-      test_nets_[i].reset(new Net<Dtype>(net_params[i]));
+      test_nets_[i].reset(new Net<Dtype,Mtype>(net_params[i]));
     } else {
-      test_nets_[i].reset(new Net<Dtype>(net_params[i],
+      test_nets_[i].reset(new Net<Dtype,Mtype>(net_params[i],
           root_solver_->test_nets_[i].get()));
     }
     test_nets_[i]->set_debug_info(param_.debug_info());
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Step(int iters) {
-  vector<Blob<Dtype>*> bottom_vec;
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Step(int iters) {
+  vector<Blob<Dtype,Mtype>*> bottom_vec;
   const int start_iter = iter_;
   const int stop_iter = iter_ + iters;
   int average_loss = this->param_.average_loss();
   losses_.clear();
-  smoothed_loss_ = 0;
+  smoothed_loss_ = 0.;
 
   while (iter_ < stop_iter) {
     // zero-init the params
@@ -218,7 +218,7 @@ void Solver<Dtype>::Step(int iters) {
     const bool display = param_.display() && iter_ % param_.display() == 0;
     net_->set_debug_info(display && param_.debug_info());
     // accumulate the loss and gradient
-    Dtype loss = 0;
+    Mtype loss = 0.;
     for (int i = 0; i < param_.iter_size(); ++i) {
       loss += net_->ForwardBackward(bottom_vec);
     }
@@ -228,23 +228,23 @@ void Solver<Dtype>::Step(int iters) {
     if (display) {
       LOG_IF(INFO, Caffe::root_solver()) << "Iteration " << iter_
           << ", loss = " << smoothed_loss_;
-      const vector<Blob<Dtype>*>& result = net_->output_blobs();
+      const vector<Blob<Dtype,Mtype>*>& result = net_->output_blobs();
       int score_index = 0;
       for (int j = 0; j < result.size(); ++j) {
         const Dtype* result_vec = result[j]->cpu_data();
         const string& output_name =
             net_->blob_names()[net_->output_blob_indices()[j]];
-        const Dtype loss_weight =
-            net_->blob_loss_weights()[net_->output_blob_indices()[j]];
+        const Mtype loss_weight = Get<Mtype>(
+            net_->blob_loss_weights()[net_->output_blob_indices()[j]]);
         for (int k = 0; k < result[j]->count(); ++k) {
           ostringstream loss_msg_stream;
           if (loss_weight) {
             loss_msg_stream << " (* " << loss_weight
-                            << " = " << loss_weight * result_vec[k] << " loss)";
+                            << " = " << loss_weight * Get<Mtype>(result_vec[k]) << " loss)";
           }
           LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
               << score_index++ << ": " << output_name << " = "
-              << result_vec[k] << loss_msg_stream.str();
+              << Get<Mtype>(result_vec[k]) << loss_msg_stream.str();
         }
       }
     }
@@ -274,8 +274,8 @@ void Solver<Dtype>::Step(int iters) {
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Solve(const char* resume_file) {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Solve(const char* resume_file) {
   CHECK(Caffe::root_solver());
   LOG(INFO) << "Solving " << net_->name();
   LOG(INFO) << "Learning Rate Policy: " << param_.lr_policy();
@@ -310,7 +310,7 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   // display the loss, which is computed in the forward pass.
   if (param_.display() && iter_ % param_.display() == 0) {
     int average_loss = this->param_.average_loss();
-    Dtype loss;
+    Mtype loss;
     net_->ForwardPrefilled(&loss);
 
     UpdateSmoothedLoss(loss, start_iter, average_loss);
@@ -323,8 +323,8 @@ void Solver<Dtype>::Solve(const char* resume_file) {
   LOG(INFO) << "Optimization Done.";
 }
 
-template <typename Dtype>
-void Solver<Dtype>::TestAll() {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::TestAll() {
   for (int test_net_id = 0;
        test_net_id < test_nets_.size() && !requested_early_exit_;
        ++test_net_id) {
@@ -332,8 +332,8 @@ void Solver<Dtype>::TestAll() {
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Test(const int test_net_id) {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Test(const int test_net_id) {
   CHECK(Caffe::root_solver());
   LOG(INFO) << "Iteration " << iter_
             << ", Testing net (#" << test_net_id << ")";
@@ -341,9 +341,9 @@ void Solver<Dtype>::Test(const int test_net_id) {
       ShareTrainedLayersWith(net_.get());
   vector<Dtype> test_score;
   vector<int> test_score_output_id;
-  vector<Blob<Dtype>*> bottom_vec;
-  const shared_ptr<Net<Dtype> >& test_net = test_nets_[test_net_id];
-  Dtype loss = 0;
+  vector<Blob<Dtype,Mtype>*> bottom_vec;
+  const shared_ptr<Net<Dtype,Mtype> >& test_net = test_nets_[test_net_id];
+  Mtype loss = 0.;
   for (int i = 0; i < param_.test_iter(test_net_id); ++i) {
     SolverAction::Enum request = GetRequestedAction();
     // Check to see if stoppage of testing/training has been requested.
@@ -360,8 +360,8 @@ void Solver<Dtype>::Test(const int test_net_id) {
       break;
     }
 
-    Dtype iter_loss;
-    const vector<Blob<Dtype>*>& result =
+    Mtype iter_loss;
+    const vector<Blob<Dtype,Mtype>*>& result =
         test_net->Forward(bottom_vec, &iter_loss);
     if (param_.test_compute_loss()) {
       loss += iter_loss;
@@ -379,7 +379,8 @@ void Solver<Dtype>::Test(const int test_net_id) {
       for (int j = 0; j < result.size(); ++j) {
         const Dtype* result_vec = result[j]->cpu_data();
         for (int k = 0; k < result[j]->count(); ++k) {
-          test_score[idx++] += result_vec[k];
+          test_score[idx] = Get<Dtype>( Get<Mtype>(result_vec[k]) + Get<Mtype>(test_score[idx]) );
+          idx++;
         }
       }
     }
@@ -398,18 +399,18 @@ void Solver<Dtype>::Test(const int test_net_id) {
     const string& output_name = test_net->blob_names()[output_blob_index];
     const Dtype loss_weight = test_net->blob_loss_weights()[output_blob_index];
     ostringstream loss_msg_stream;
-    const Dtype mean_score = test_score[i] / param_.test_iter(test_net_id);
-    if (loss_weight) {
-      loss_msg_stream << " (* " << loss_weight
-                      << " = " << loss_weight * mean_score << " loss)";
+    const Mtype mean_score = Get<Mtype>(test_score[i]) / param_.test_iter(test_net_id);
+    if (Get<Mtype>(loss_weight)) {
+      loss_msg_stream << " (* " << Get<Mtype>(loss_weight)
+                      << " = " << Get<Mtype>(loss_weight) * mean_score << " loss)";
     }
     LOG(INFO) << "    Test net output #" << i << ": " << output_name << " = "
               << mean_score << loss_msg_stream.str();
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Snapshot() {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Snapshot() {
   CHECK(Caffe::root_solver());
   string model_filename;
   switch (param_.snapshot_format()) {
@@ -426,8 +427,8 @@ void Solver<Dtype>::Snapshot() {
   SnapshotSolverState(model_filename);
 }
 
-template <typename Dtype>
-void Solver<Dtype>::CheckSnapshotWritePermissions() {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::CheckSnapshotWritePermissions() {
   if (Caffe::root_solver() && param_.snapshot()) {
     CHECK(param_.has_snapshot_prefix())
         << "In solver params, snapshot is specified but snapshot_prefix is not";
@@ -444,14 +445,14 @@ void Solver<Dtype>::CheckSnapshotWritePermissions() {
   }
 }
 
-template <typename Dtype>
-string Solver<Dtype>::SnapshotFilename(const string extension) {
+template <typename Dtype, typename Mtype>
+string Solver<Dtype,Mtype>::SnapshotFilename(const string extension) {
   return param_.snapshot_prefix() + "_iter_" + caffe::format_int(iter_)
     + extension;
 }
 
-template <typename Dtype>
-string Solver<Dtype>::SnapshotToBinaryProto() {
+template <typename Dtype, typename Mtype>
+string Solver<Dtype,Mtype>::SnapshotToBinaryProto() {
   string model_filename = SnapshotFilename(".caffemodel");
   LOG(INFO) << "Snapshotting to binary proto file " << model_filename;
   NetParameter net_param;
@@ -460,16 +461,16 @@ string Solver<Dtype>::SnapshotToBinaryProto() {
   return model_filename;
 }
 
-template <typename Dtype>
-string Solver<Dtype>::SnapshotToHDF5() {
+template <typename Dtype, typename Mtype>
+string Solver<Dtype,Mtype>::SnapshotToHDF5() {
   string model_filename = SnapshotFilename(".caffemodel.h5");
   LOG(INFO) << "Snapshotting to HDF5 file " << model_filename;
   net_->ToHDF5(model_filename, param_.snapshot_diff());
   return model_filename;
 }
 
-template <typename Dtype>
-void Solver<Dtype>::Restore(const char* state_file) {
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::Restore(const char* state_file) {
   CHECK(Caffe::root_solver());
   string state_filename(state_file);
   if (state_filename.size() >= 3 &&
@@ -480,8 +481,8 @@ void Solver<Dtype>::Restore(const char* state_file) {
   }
 }
 
-template <typename Dtype>
-void Solver<Dtype>::UpdateSmoothedLoss(Dtype loss, int start_iter,
+template <typename Dtype, typename Mtype>
+void Solver<Dtype,Mtype>::UpdateSmoothedLoss(Mtype loss, int start_iter,
     int average_loss) {
   if (losses_.size() < average_loss) {
     losses_.push_back(loss);

@@ -37,7 +37,7 @@ typedef boost::function<SolverAction::Enum()> ActionCallback;
  * Requires implementation of ApplyUpdate to compute a parameter update
  * given the current state of the Net parameters.
  */
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 class Solver {
  public:
   explicit Solver(const SolverParameter& param,
@@ -68,8 +68,8 @@ class Solver {
   void Snapshot();
   virtual ~Solver() {}
   inline const SolverParameter& param() const { return param_; }
-  inline shared_ptr<Net<Dtype> > net() { return net_; }
-  inline const vector<shared_ptr<Net<Dtype> > >& test_nets() {
+  inline shared_ptr<Net<Dtype,Mtype> > net() { return net_; }
+  inline const vector<shared_ptr<Net<Dtype,Mtype> > >& test_nets() {
     return test_nets_;
   }
   int iter() { return iter_; }
@@ -80,7 +80,7 @@ class Solver {
     virtual void on_start() = 0;
     virtual void on_gradients_ready() = 0;
 
-    template <typename T>
+    template <typename T, typename M>
     friend class Solver;
   };
   const vector<Callback*>& callbacks() const { return callbacks_; }
@@ -107,16 +107,16 @@ class Solver {
   virtual void RestoreSolverStateFromHDF5(const string& state_file) = 0;
   virtual void RestoreSolverStateFromBinaryProto(const string& state_file) = 0;
   void DisplayOutputBlobs(const int net_id);
-  void UpdateSmoothedLoss(Dtype loss, int start_iter, int average_loss);
+  void UpdateSmoothedLoss(Mtype loss, int start_iter, int average_loss);
 
   SolverParameter param_;
   int iter_;
   int current_step_;
-  shared_ptr<Net<Dtype> > net_;
-  vector<shared_ptr<Net<Dtype> > > test_nets_;
+  shared_ptr<Net<Dtype,Mtype> > net_;
+  vector<shared_ptr<Net<Dtype,Mtype> > > test_nets_;
   vector<Callback*> callbacks_;
-  vector<Dtype> losses_;
-  Dtype smoothed_loss_;
+  vector<Mtype> losses_;
+  Mtype smoothed_loss_;
 
   // The root solver that holds root nets (actually containing shared layers)
   // in data parallelism
@@ -136,12 +136,12 @@ class Solver {
  * @brief Solver that only computes gradients, used as worker
  *        for multi-GPU training.
  */
-template <typename Dtype>
-class WorkerSolver : public Solver<Dtype> {
+template <typename Dtype, typename Mtype>
+class WorkerSolver : public Solver<Dtype,Mtype> {
  public:
   explicit WorkerSolver(const SolverParameter& param,
-      const Solver<Dtype>* root_solver = NULL)
-      : Solver<Dtype>(param, root_solver) {}
+      const Solver<Dtype,Mtype>* root_solver = NULL)
+      : Solver<Dtype,Mtype>(param, root_solver) {}
 
  protected:
   void ApplyUpdate() {}
