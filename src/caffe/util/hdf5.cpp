@@ -6,10 +6,8 @@
 namespace caffe {
 
 // Verifies format of data stored in HDF5 file and reshapes blob accordingly.
-template <typename Dtype>
-void hdf5_load_nd_dataset_helper(
-    hid_t file_id, const char* dataset_name_, int min_dim, int max_dim,
-    Blob<Dtype>* blob) {
+std::vector<int> 
+hdf5_load_nd_dataset_helper(hid_t file_id, const char* dataset_name_, int min_dim, int max_dim) {
   // Verify that the dataset exists.
   CHECK(H5LTfind_dataset(file_id, dataset_name_))
       << "Failed to find HDF5 dataset " << dataset_name_;
@@ -60,68 +58,45 @@ void hdf5_load_nd_dataset_helper(
   for (int i = 0; i < dims.size(); ++i) {
     blob_dims[i] = dims[i];
   }
-  blob->Reshape(blob_dims);
+  return blob_dims;
 }
 
-template <>
-void hdf5_load_nd_dataset<float>(hid_t file_id, const char* dataset_name_,
-        int min_dim, int max_dim, Blob<float>* blob) {
-  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
-  herr_t status = H5LTread_dataset_float(
-    file_id, dataset_name_, blob->mutable_cpu_data());
-  CHECK_GE(status, 0) << "Failed to read float dataset " << dataset_name_;
+template<>
+herr_t hdf5_load(hid_t file_id, const string& dataset_name, double* data) {
+  return H5LTread_dataset_double(file_id, dataset_name.c_str(), data);
+} 
+template<>
+herr_t hdf5_load(hid_t file_id, const string& dataset_name, float* data) {
+  return H5LTread_dataset_float(file_id, dataset_name.c_str(), data);
 }
 
-template <>
-void hdf5_load_nd_dataset<double>(hid_t file_id, const char* dataset_name_,
-        int min_dim, int max_dim, Blob<double>* blob) {
-  hdf5_load_nd_dataset_helper(file_id, dataset_name_, min_dim, max_dim, blob);
-  herr_t status = H5LTread_dataset_double(
-    file_id, dataset_name_, blob->mutable_cpu_data());
-  CHECK_GE(status, 0) << "Failed to read double dataset " << dataset_name_;
+template<> 
+herr_t hdf5_save(hid_t file_id, 
+		 const string& dataset_name, 
+		 int num_axes, hsize_t *dims, const float* data) {
+  return H5LTmake_dataset_float(file_id, dataset_name.c_str(), num_axes, dims, data);
 }
-
-template <>
-void hdf5_save_nd_dataset<float>(
-    const hid_t file_id, const string& dataset_name, const Blob<float>& blob,
-    bool write_diff) {
-  int num_axes = blob.num_axes();
-  hsize_t *dims = new hsize_t[num_axes];
-  for (int i = 0; i < num_axes; ++i) {
-    dims[i] = blob.shape(i);
-  }
-  const float* data;
-  if (write_diff) {
-    data = blob.cpu_diff();
-  } else {
-    data = blob.cpu_data();
-  }
-  herr_t status = H5LTmake_dataset_float(
-      file_id, dataset_name.c_str(), num_axes, dims, data);
-  CHECK_GE(status, 0) << "Failed to make float dataset " << dataset_name;
-  delete[] dims;
+template<>
+herr_t hdf5_save(hid_t file_id, 
+		 const string& dataset_name, 
+		 int num_axes, hsize_t *dims, const double* data) {
+  return H5LTmake_dataset_double(file_id, dataset_name.c_str(), num_axes, dims, data);
 }
-
-template <>
-void hdf5_save_nd_dataset<double>(
-    hid_t file_id, const string& dataset_name, const Blob<double>& blob,
-    bool write_diff) {
-  int num_axes = blob.num_axes();
-  hsize_t *dims = new hsize_t[num_axes];
-  for (int i = 0; i < num_axes; ++i) {
-    dims[i] = blob.shape(i);
-  }
-  const double* data;
-  if (write_diff) {
-    data = blob.cpu_diff();
-  } else {
-    data = blob.cpu_data();
-  }
-  herr_t status = H5LTmake_dataset_double(
-      file_id, dataset_name.c_str(), num_axes, dims, data);
-  CHECK_GE(status, 0) << "Failed to make double dataset " << dataset_name;
-  delete[] dims;
+  
+#ifndef CPU_ONLY
+template<>
+herr_t hdf5_load(hid_t file_id, const string& dataset_name, float16* data) {
+  return H5LTread_dataset_short(file_id, dataset_name.c_str(), 
+				reinterpret_cast<short*>(data));
 }
+template<>
+herr_t hdf5_save(hid_t file_id, 
+		 const string& dataset_name, 
+		 int num_axes, hsize_t *dims, const float16* data) {
+  return H5LTmake_dataset_short(file_id, dataset_name.c_str(), 
+				num_axes, dims, reinterpret_cast<const short*>(data));
+}
+#endif // CPU_ONLY
 
 string hdf5_load_string(hid_t loc_id, const string& dataset_name) {
   // Get size of dataset
