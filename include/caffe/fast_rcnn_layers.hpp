@@ -21,15 +21,15 @@ namespace caffe {
 
 /* ROIPoolingLayer - Region of Interest Pooling Layer
 */
-template <typename Dtype>
-class ROIPoolingLayer : public Layer<Dtype> {
+template <typename Dtype, typename Mtype>
+class ROIPoolingLayer : public Layer<Dtype,Mtype> {
  public:
   explicit ROIPoolingLayer(const LayerParameter& param)
-      : Layer<Dtype>(param) {}
-  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      : Layer<Dtype,Mtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
 
   virtual inline const char* type() const { return "ROIPooling"; }
 
@@ -39,14 +39,14 @@ class ROIPoolingLayer : public Layer<Dtype> {
   virtual inline int MaxTopBlobs() const { return 1; }
 
  protected:
-  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
-  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+  virtual void Forward_cpu(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype,Mtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype,Mtype>*>& bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype,Mtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype,Mtype>*>& bottom);
 
   int channels_;
   int height_;
@@ -54,7 +54,7 @@ class ROIPoolingLayer : public Layer<Dtype> {
   int pooled_height_;
   int pooled_width_;
   Dtype spatial_scale_;
-  Blob<int> max_idx_;
+  Blob<int,int> max_idx_;
 };
 
 template <typename Dtype>

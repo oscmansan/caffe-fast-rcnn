@@ -14,7 +14,7 @@ using std::min;
 
 namespace caffe {
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     const Dtype spatial_scale, const int channels, const int height,
     const int width, const int pooled_height, const int pooled_width,
@@ -58,7 +58,7 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
     bool is_empty = (hend <= hstart) || (wend <= wstart);
 
     // Define an empty pooling region to be zero
-    Dtype maxval = is_empty ? 0 : -FLT_MAX;
+    Mtype maxval = is_empty ? 0 : -maxDtype<Dtype>();
     // If nothing is pooled, argmax = -1 causes nothing to be backprop'd
     int maxidx = -1;
     bottom_data += (roi_batch_ind * channels + c) * height * width;
@@ -66,32 +66,32 @@ __global__ void ROIPoolForward(const int nthreads, const Dtype* bottom_data,
       for (int w = wstart; w < wend; ++w) {
         int bottom_index = h * width + w;
         if (bottom_data[bottom_index] > maxval) {
-          maxval = bottom_data[bottom_index];
+          maxval = Get<Mtype>(bottom_data[bottom_index]);
           maxidx = bottom_index;
         }
       }
     }
-    top_data[index] = maxval;
-    argmax_data[index] = maxidx;
+    top_data[index] = Get<Dtype>(maxval);
+    argmax_data[index] = Get<Dtype>(maxidx);
   }
 }
 
-template <typename Dtype>
-void ROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {
+template <typename Dtype, typename Mtype>
+void ROIPoolingLayer<Dtype,Mtype>::Forward_gpu(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top) {
   const Dtype* bottom_data = bottom[0]->gpu_data();
   const Dtype* bottom_rois = bottom[1]->gpu_data();
   Dtype* top_data = top[0]->mutable_gpu_data();
   int* argmax_data = max_idx_.mutable_gpu_data();
   int count = top[0]->count();
   // NOLINT_NEXT_LINE(whitespace/operators)
-  ROIPoolForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
+  ROIPoolForward<Dtype,Mtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, spatial_scale_, channels_, height_, width_,
       pooled_height_, pooled_width_, bottom_rois, top_data, argmax_data);
   CUDA_POST_KERNEL_CHECK;
 }
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
     const int* argmax_data, const int num_rois, const Dtype spatial_scale,
     const int channels, const int height, const int width,
@@ -104,7 +104,7 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
     int c = (index / width / height) % channels;
     int n = index / width / height / channels;
 
-    Dtype gradient = 0;
+    Mtype gradient = 0.;
     // Accumulate gradient over all ROIs that pooled this element
     for (int roi_n = 0; roi_n < num_rois; ++roi_n) {
       const Dtype* offset_bottom_rois = bottom_rois + roi_n * 5;
@@ -137,15 +137,15 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
       int roi_width = max(roi_end_w - roi_start_w + 1, 1);
       int roi_height = max(roi_end_h - roi_start_h + 1, 1);
 
-      Dtype bin_size_h = static_cast<Dtype>(roi_height)
-                         / static_cast<Dtype>(pooled_height);
-      Dtype bin_size_w = static_cast<Dtype>(roi_width)
-                         / static_cast<Dtype>(pooled_width);
+      Dtype bin_size_h = Get<Dtype>(roi_height)
+                         / Get<Dtype>(pooled_height);
+      Dtype bin_size_w = Get<Dtype>(roi_width)
+                         / Get<Dtype>(pooled_width);
 
-      int phstart = floor(static_cast<Dtype>(h - roi_start_h) / bin_size_h);
-      int phend = ceil(static_cast<Dtype>(h - roi_start_h + 1) / bin_size_h);
-      int pwstart = floor(static_cast<Dtype>(w - roi_start_w) / bin_size_w);
-      int pwend = ceil(static_cast<Dtype>(w - roi_start_w + 1) / bin_size_w);
+      int phstart = floor(Get<Dtype>(h - roi_start_h) / bin_size_h);
+      int phend = ceil(Get<Dtype>(h - roi_start_h + 1) / bin_size_h);
+      int pwstart = floor(Get<Dtype>(w - roi_start_w) / bin_size_w);
+      int pwend = ceil(Get<Dtype>(w - roi_start_w + 1) / bin_size_w);
 
       phstart = min(max(phstart, 0), pooled_height);
       phend = min(max(phend, 0), pooled_height);
@@ -155,18 +155,18 @@ __global__ void ROIPoolBackward(const int nthreads, const Dtype* top_diff,
       for (int ph = phstart; ph < phend; ++ph) {
         for (int pw = pwstart; pw < pwend; ++pw) {
           if (offset_argmax_data[ph * pooled_width + pw] == (h * width + w)) {
-            gradient += offset_top_diff[ph * pooled_width + pw];
+            gradient += Get<Mtype>(offset_top_diff[ph * pooled_width + pw]);
           }
         }
       }
     }
-    bottom_diff[index] = gradient;
+    bottom_diff[index] = Get<Dtype>(gradient);
   }
 }
 
-template <typename Dtype>
-void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
+template <typename Dtype, typename Mtype>
+void ROIPoolingLayer<Dtype,Mtype>::Backward_gpu(const vector<Blob<Dtype,Mtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype,Mtype>*>& bottom) {
   if (!propagate_down[0]) {
     return;
   }
@@ -174,10 +174,10 @@ void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   const Dtype* top_diff = top[0]->gpu_diff();
   Dtype* bottom_diff = bottom[0]->mutable_gpu_diff();
   const int count = bottom[0]->count();
-  caffe_gpu_set(count, Dtype(0.), bottom_diff);
+  caffe_gpu_set(count, Mtype(0.), bottom_diff);
   const int* argmax_data = max_idx_.gpu_data();
   // NOLINT_NEXT_LINE(whitespace/operators)
-  ROIPoolBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
+  ROIPoolBackward<Dtype,Mtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, top_diff, argmax_data, top[0]->num(), spatial_scale_, channels_,
       height_, width_, pooled_height_, pooled_width_, bottom_diff, bottom_rois);
   CUDA_POST_KERNEL_CHECK;
