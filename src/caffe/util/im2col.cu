@@ -31,7 +31,7 @@ __global__ void im2col_gpu_kernel(const int n, const Dtype* data_im,
         int w_im = w_offset + j * dilation_w;
         *data_col_ptr =
             (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ?
-            data_im_ptr[i * dilation_h * width + j * dilation_w] : 0;
+            data_im_ptr[i * dilation_h * width + j * dilation_w] : Get<Dtype>(0);
         data_col_ptr += height_col * width_col;
       }
     }
@@ -70,6 +70,10 @@ template void im2col_gpu<double>(const double* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h, const int stride_w,
     const int dilation_h, const int dilation_w, double* data_col);
+template void im2col_gpu<float16>(const float16* data_im, const int channels,
+    const int height, const int width, const int kernel_h, const int kernel_w,
+    const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+    const int dilation_h, const int dilation_w, float16* data_col);
 
 template <typename Dtype, int num_axes>
 __global__ void im2col_nd_gpu_kernel(const int n, const Dtype* data_im,
@@ -138,7 +142,7 @@ __global__ void im2col_nd_gpu_kernel(const int n, const Dtype* data_im,
         }
         *data_col_ptr = data_im_ptr[data_im_offset];
       } else {
-        *data_col_ptr = 0;
+        *data_col_ptr = Get<Dtype>(0);
       }
       data_col_ptr += data_col_inc;
       incremented = false;
@@ -242,8 +246,13 @@ template void im2col_nd_gpu<double>(const double* data_im,
     const int* im_shape, const int* col_shape,
     const int* kernel_shape, const int* pad, const int* stride,
     const int* dilation, double* data_col);
+template void im2col_nd_gpu<float16>(const float16* data_im,
+    const int num_spatial_axes, const int col_size,
+    const int* im_shape, const int* col_shape,
+    const int* kernel_shape, const int* pad, const int* stride,
+	const int* dilation, float16* data_col);
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 __global__ void col2im_gpu_kernel(const int n, const Dtype* data_col,
     const int height, const int width, const int channels,
     const int kernel_h, const int kernel_w,
@@ -253,7 +262,7 @@ __global__ void col2im_gpu_kernel(const int n, const Dtype* data_col,
     const int height_col, const int width_col,
     Dtype* data_im) {
   CUDA_KERNEL_LOOP(index, n) {
-    Dtype val = 0;
+    Mtype val = 0.;
     const int w_im = index % width + pad_w;
     const int h_im = (index / width) % height + pad_h;
     const int c_im = index / (width * height);
@@ -276,15 +285,15 @@ __global__ void col2im_gpu_kernel(const int n, const Dtype* data_col,
           w_k /= dilation_w;
           int data_col_index = (((c_im * kernel_h + h_k) * kernel_w + w_k) *
                                 height_col + h_col) * width_col + w_col;
-          val += data_col[data_col_index];
+          val += Get<Mtype>(data_col[data_col_index]);
         }
       }
     }
-    data_im[index] = val;
+    data_im[index] = Get<Dtype>(val);
   }
 }
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 void col2im_gpu(const Dtype* data_col, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
@@ -298,7 +307,7 @@ void col2im_gpu(const Dtype* data_col, const int channels,
   // To avoid involving atomic operations, we will launch one kernel per
   // bottom dimension, and then in the kernel add up the top dimensions.
   // NOLINT_NEXT_LINE(whitespace/operators)
-  col2im_gpu_kernel<Dtype><<<CAFFE_GET_BLOCKS(num_kernels),
+  col2im_gpu_kernel<Dtype,Mtype><<<CAFFE_GET_BLOCKS(num_kernels),
                              CAFFE_CUDA_NUM_THREADS>>>(
       num_kernels, data_col, height, width, channels, kernel_h, kernel_w,
       pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
@@ -307,16 +316,27 @@ void col2im_gpu(const Dtype* data_col, const int channels,
 }
 
 // Explicit instantiation
-template void col2im_gpu<float>(const float* data_col, const int channels,
+template void col2im_gpu<float,float>(const float* data_col, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
     const int stride_w, const int dilation_h, const int dilation_w,
     float* data_im);
-template void col2im_gpu<double>(const double* data_col, const int channels,
+template void col2im_gpu<double,double>(const double* data_col, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
     const int stride_w, const int dilation_h, const int dilation_w,
     double* data_im);
+template void col2im_gpu<float16,float>(const float16* data_col, const int channels,
+    const int height, const int width, const int patch_h, const int patch_w,
+    const int pad_h, const int pad_w, const int stride_h,
+    const int stride_w, const int dilation_h, const int dilation_w,
+	float16* data_im);
+
+template void col2im_gpu<float16,float16>(const float16* data_col, const int channels,
+    const int height, const int width, const int patch_h, const int patch_w,
+    const int pad_h, const int pad_w, const int stride_h,
+    const int stride_w, const int dilation_h, const int dilation_w,
+	float16* data_im);
 
 template <typename Dtype, int num_axes>
 __global__ void col2im_nd_gpu_kernel(const int n, const Dtype* data_col,
@@ -369,7 +389,7 @@ __global__ void col2im_nd_gpu_kernel(const int n, const Dtype* data_col,
       if (d_col_start[i] >= d_col_end[i]) {
         // Skip computation if the dimension is 0 at any spatial axis --
         // final val will be 0.
-        data_im[index] = 0;
+        data_im[index] = Get<Dtype>(0);
         done = true;
         break;  // for (int i = 0; i < num_axes; ++i)
       }
@@ -378,7 +398,7 @@ __global__ void col2im_nd_gpu_kernel(const int n, const Dtype* data_col,
       continue;  // CUDA_KERNEL_LOOP(index, n)
     }
     // Loop over the col to compute the output val.
-    Dtype val = 0;
+    Dtype val = Get<Dtype>(0);
     bool incremented = true;
     bool skip = false;
     do {
@@ -508,5 +528,10 @@ template void col2im_nd_gpu<double>(const double* data_col,
     const int* im_shape, const int* col_shape,
     const int* kernel_shape, const int* pad, const int* stride,
     const int* dilation, double* data_im);
+template void col2im_nd_gpu<float16>(const float16* data_col,
+    const int num_spatial_axes, const int im_size,
+    const int* im_shape, const int* col_shape,
+    const int* kernel_shape, const int* pad, const int* stride,
+	const int* dilation, float16* data_im);
 
 }  // namespace caffe
