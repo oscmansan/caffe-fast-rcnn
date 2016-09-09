@@ -14,15 +14,15 @@ namespace caffe {
  * @brief Abstract base class that factors out the BLAS code common to
  *        ConvolutionLayer and DeconvolutionLayer.
  */
-template <typename Dtype>
-class BaseConvolutionLayer : public Layer<Dtype> {
+template <typename Dtype, typename Mtype>
+class BaseConvolutionLayer : public Layer<Dtype,Mtype> {
  public:
   explicit BaseConvolutionLayer(const LayerParameter& param)
-      : Layer<Dtype>(param) {}
-  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      : Layer<Dtype,Mtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
 
   virtual inline int MinBottomBlobs() const { return 1; }
   virtual inline int MinTopBlobs() const { return 1; }
@@ -63,15 +63,15 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   virtual void compute_output_shape() = 0;
 
   /// @brief The spatial dimensions of a filter kernel.
-  Blob<int> kernel_shape_;
+  Blob<int,int> kernel_shape_;
   /// @brief The spatial dimensions of the stride.
-  Blob<int> stride_;
+  Blob<int,int> stride_;
   /// @brief The spatial dimensions of the padding.
-  Blob<int> pad_;
+  Blob<int,int> pad_;
   /// @brief The spatial dimensions of the dilation.
-  Blob<int> dilation_;
+  Blob<int,int> dilation_;
   /// @brief The spatial dimensions of the convolution input.
-  Blob<int> conv_input_shape_;
+  Blob<int,int> conv_input_shape_;
   /// @brief The spatial dimensions of the col_buffer.
   vector<int> col_buffer_shape_;
   /// @brief The spatial dimensions of the output.
@@ -165,8 +165,8 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   int col_offset_;
   int output_offset_;
 
-  Blob<Dtype> col_buffer_;
-  Blob<Dtype> bias_multiplier_;
+  Blob<Dtype,Mtype> col_buffer_;
+  Blob<Dtype,Mtype> bias_multiplier_;
 };
 
 }  // namespace caffe
