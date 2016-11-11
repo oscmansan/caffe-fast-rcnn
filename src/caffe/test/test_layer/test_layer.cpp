@@ -5,11 +5,14 @@
 using namespace std;
 
 #include "caffe/blob.hpp"
-#include "caffe/layers/conv_layer.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/util/io.hpp"
-#include "caffe/util/get.hpp"
+#include "caffe/common.hpp"
 #include "caffe/filler.hpp"
+#include "caffe/layers/conv_layer.hpp"
+#include "caffe/util/get.hpp"
+
+#ifdef USE_CUDNN
+#include "caffe/layers/cudnn_conv_layer.hpp"
+#endif
 using namespace caffe;
 
 class LayerTest {
