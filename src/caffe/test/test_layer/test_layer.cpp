@@ -15,6 +15,9 @@ using namespace std;
 #endif
 using namespace caffe;
 
+#define Dtype float16
+#define Mtype float16
+
 class LayerTest {
 public:
     LayerTest() {
@@ -38,7 +41,7 @@ public:
         conv_param->mutable_weight_filler()->set_value(1.0);
 
         // Create layer
-        std::shared_ptr<Layer<float16,float16> > layer(new ConvolutionLayer<float16,float16>(layer_param));
+        std::shared_ptr<Layer<Dtype,Mtype> > layer(new ConvolutionLayer<Dtype,Mtype>(layer_param));
         layer->SetUp(bottom,top);
 
         assert(top_blob->num() == 1);
@@ -46,7 +49,7 @@ public:
         assert(top_blob->height() == 3);
         assert(top_blob->width() == 2);
 
-        Blob<float16,float16>* weights = layer->blobs()[0].get();
+        Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
         print_blob(weights);
 
         // Run forward pass
@@ -55,22 +58,22 @@ public:
     }
 
 private:
-    Blob<float16,float16>* bottom_blob;
-    Blob<float16,float16>* top_blob;
-    vector<Blob<float16,float16>*> bottom;
-    vector<Blob<float16,float16>*> top;
+    Blob<Dtype,Mtype>* bottom_blob;
+    Blob<Dtype,Mtype>* top_blob;
+    vector<Blob<Dtype,Mtype>*> bottom;
+    vector<Blob<Dtype,Mtype>*> top;
 
     void init() {
         // Create bottom blob
-        bottom_blob = new Blob<float16,float16>();
+        bottom_blob = new Blob<Dtype,Mtype>();
         bottom.push_back(bottom_blob);
         
         // Create top blob
-        top_blob = new Blob<float16,float16>();
+        top_blob = new Blob<Dtype,Mtype>();
         top.push_back(top_blob);
     }
 
-    void print_shape(Blob<float16,float16>* blob) {
+    void print_shape(Blob<Dtype,Mtype>* blob) {
         vector<int> shape = blob->shape();
         cout << "(" << shape[0];
         for (int i = 1; i < shape.size(); ++i) {
@@ -79,9 +82,9 @@ private:
         cout << ")" << endl;
     }
 
-    void print_blob(Blob<float16,float16>* blob) {
+    void print_blob(Blob<Dtype,Mtype>* blob) {
         print_shape(blob);
-        const float16* data = blob->cpu_data();
+        const Dtype* data = blob->cpu_data();
         vector<int> shape = blob->shape();
         for (int i = 0; i < shape[0]*shape[1]; ++i) {
             for (int j = 0; j < shape[2]; ++j) {
@@ -95,15 +98,15 @@ private:
         cout << endl;
     }
 
-    void init_rand(Blob<float16,float16>* blob) {
-        float16* data = blob->mutable_cpu_data();
+    void init_rand(Blob<Dtype,Mtype>* blob) {
+        Dtype* data = blob->mutable_cpu_data();
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(float(rand())/float(RAND_MAX));
         }
     }
 
-    void init_ones(Blob<float16,float16>* blob) {
-        float16* data = blob->mutable_cpu_data();
+    void init_ones(Blob<Dtype,Mtype>* blob) {
+        Dtype* data = blob->mutable_cpu_data();
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(1.);
         }
