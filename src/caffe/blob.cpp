@@ -191,7 +191,7 @@ Mtype Blob<Dtype,Mtype>::asum_data() const {
   if (!data_) { return Get<Mtype>(0); }
   switch (data_->head()) {
   case SyncedMemory::HEAD_AT_CPU:
-    return caffe_cpu_asum(count_, cpu_data());
+    return caffe_cpu_asum<Dtype,Mtype>(count_, cpu_data());
   case SyncedMemory::HEAD_AT_GPU:
   case SyncedMemory::SYNCED:
 #ifndef CPU_ONLY
@@ -226,7 +226,7 @@ Mtype Blob<Dtype,Mtype>::asum_diff() const {
   if (!diff_) { return Get<Mtype>(0); }
   switch (diff_->head()) {
   case SyncedMemory::HEAD_AT_CPU:
-    return caffe_cpu_asum(count_, cpu_diff());
+    return caffe_cpu_asum<Dtype,Mtype>(count_, cpu_diff());
   case SyncedMemory::HEAD_AT_GPU:
   case SyncedMemory::SYNCED:
 #ifndef CPU_ONLY
@@ -264,7 +264,7 @@ Mtype Blob<Dtype, Mtype>::sumsq_data() const {
   switch (data_->head()) {
   case SyncedMemory::HEAD_AT_CPU:
     data = cpu_data();
-    sumsq = caffe_cpu_dot(count_, data, data);
+    sumsq = caffe_cpu_dot<Dtype,Mtype>(count_, data, data);
     break;
   case SyncedMemory::HEAD_AT_GPU:
   case SyncedMemory::SYNCED:
@@ -301,7 +301,7 @@ Mtype Blob<Dtype, Mtype>::sumsq_diff() const {
   switch (diff_->head()) {
   case SyncedMemory::HEAD_AT_CPU:
     diff = cpu_diff();
-    sumsq = caffe_cpu_dot(count_, diff, diff);
+    sumsq = caffe_cpu_dot<Dtype,Mtype>(count_, diff, diff);
     break;
   case SyncedMemory::HEAD_AT_GPU:
   case SyncedMemory::SYNCED:
@@ -421,19 +421,19 @@ void Blob<Dtype, Mtype>::CopyFrom(const Blob& source, bool copy_diff, bool resha
   switch (Caffe::mode()) {
   case Caffe::GPU:
     if (copy_diff) {
-      caffe_copy(count_, source.gpu_diff(),
+      caffe_copy<Dtype,Mtype>(count_, source.gpu_diff(),
           static_cast<Dtype*>(diff_->mutable_gpu_data()));
     } else {
-      caffe_copy(count_, source.gpu_data(),
+      caffe_copy<Dtype,Mtype>(count_, source.gpu_data(),
           static_cast<Dtype*>(data_->mutable_gpu_data()));
     }
     break;
   case Caffe::CPU:
     if (copy_diff) {
-      caffe_copy(count_, source.cpu_diff(),
+      caffe_copy<Dtype,Mtype>(count_, source.cpu_diff(),
           static_cast<Dtype*>(diff_->mutable_cpu_data()));
     } else {
-      caffe_copy(count_, source.cpu_data(),
+      caffe_copy<Dtype,Mtype>(count_, source.cpu_data(),
           static_cast<Dtype*>(data_->mutable_cpu_data()));
     }
     break;

@@ -36,3 +36,7 @@ build/cuda/src/caffe/util/fp16_conversion.o: src/caffe/util/fp16_conversion.cu
 build/src/caffe/util/float16.o: src/caffe/util/float16.cpp
 	@ echo CXX $<
 	g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+build/src/caffe/blob.o: src/caffe/blob.cpp
+	@ echo CXX $<
+	g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
