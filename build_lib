@@ -1,8 +1,10 @@
 PROJECT := caffe
 
 BUILD_DIR := build
+BUILD_INCLUDE_DIR := $(BUILD_DIR)/src
 CUDA_DIR := /usr/local/cuda
 
+LIBRARY_NAME := $(PROJECT)
 LIB_BUILD_DIR := $(BUILD_DIR)/lib
 DYNAMIC_VERSION_MAJOR       := 1
 DYNAMIC_VERSION_MINOR       := 0
@@ -34,7 +36,6 @@ OBJS := $(PROTO_OBJS) $(CXX_OBJS) $(CU_OBJS)
 
 
 # Complete build flags.
-BUILD_INCLUDE_DIR := $(BUILD_DIR)/src
 THIRDPARTY_DIR=$(PROJECT_DIR)/3rdparty
 INCLUDE_DIRS += $(BUILD_INCLUDE_DIR) src include $(THIRDPARTY_DIR)
 CUDA_INCLUDE_DIR := $(CUDA_DIR)/include
@@ -64,36 +65,38 @@ NVCCFLAGS += -ccbin=g++ -Xcompiler -fPIC $(COMMON_FLAGS)
 
 
 
-
-
 FP16_CONVERSION := build/cuda/src/caffe/util/fp16_conversion.o
 FLOAT16 := build/src/caffe/util/float16.o
 BLOB := build/src/caffe/blob.o
 
 all: proto FP16_CONVERSION FLOAT16 BLOB $(DYNAMIC_NAME)
 
-proto: $(PROTO_GEN_CC) $(PROTO_GEN_HEADER)
+proto: $(PROTO_GEN_CC) $(PROTO_GEN_HEADER) $(PROTO_OBJS)
 
 $(PROTO_BUILD_DIR)/%.pb.cc $(PROTO_BUILD_DIR)/%.pb.h : $(PROTO_SRC_DIR)/%.proto | $(PROTO_BUILD_DIR)
 	@ echo PROTOC $<
-	protoc --proto_path=$(PROTO_SRC_DIR) --cpp_out=$(PROTO_BUILD_DIR) $<
+	@ protoc --proto_path=$(PROTO_SRC_DIR) --cpp_out=$(PROTO_BUILD_DIR) $<
 
-FP16_CONVERSION: src/caffe/util/fp16_conversion.cu
+$(PROTO_OBJS): $(PROTO_GEN_CC)
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(FP16_CONVERSION): src/caffe/util/fp16_conversion.cu
 	@ echo NVCC $<
-	$(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
-FLOAT16: src/caffe/util/float16.cpp
+$(FLOAT16): src/caffe/util/float16.cpp
 	@ echo CXX $<
-	g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
-BLOB: src/caffe/blob.cpp
+$(BLOB): src/caffe/blob.cpp
 	@ echo CXX $<
-	g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
 $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ echo LD -o $@
-	g++ -shared -o $@ $(OBJS) $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS)
+	@ g++ -shared -o $@ $(OBJS) $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS)
 	@ cd $(BUILD_DIR)/lib; rm -f $(DYNAMIC_NAME_SHORT); ln -s $(DYNAMIC_VERSIONED_NAME_SHORT) $(DYNAMIC_NAME_SHORT)
 
 clean:
-	rm FP16_CONVERSION FLOAT16 BLOB
+	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(FLOAT16) $(BLOB)
