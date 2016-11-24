@@ -2,6 +2,8 @@
 #include <boost/random.hpp>
 
 #include <limits>
+#include <vector>
+#include <iostream>
 
 #include "caffe/common.hpp"
 #include "caffe/util/math_functions.hpp"
@@ -396,7 +398,8 @@ void caffe_sqr<double,double>(const int n, const double* a, double* y) {
 #ifndef CPU_ONLY
 template <>
 void caffe_sqr<float16,float16>(const int n, const float16* a, float16* y) {
-  vhSqr(n, a, y);
+  std::cout << "vhSqr()" << std::endl;
+  //vhSqr(n, a, y);
 }
 template <>
 void caffe_sqr<float16,float>(const int n, const float16* a, float16* y) {
@@ -421,7 +424,8 @@ void caffe_exp<double,double>(const int n, const double* a, double* y) {
 #ifndef CPU_ONLY
 template <>
 void caffe_exp<float16, float16>(const int n, const float16* a, float16* y) {
-  vhExp(n, a, y);
+  std::cout << "vhExp()" << std::endl;
+  //vhExp(n, a, y);
 }
 
 template <>
@@ -445,7 +449,8 @@ void caffe_log<double>(const int n, const double* a, double* y) {
 #ifndef CPU_ONLY
 template <>
 void caffe_log<float16>(const int n, const float16* a, float16* y) {
-  vhLn(n, a, y);
+  std::cout << "vhLn()" << std::endl;
+  //vhLn(n, a, y);
 }
 #endif
 
@@ -641,7 +646,7 @@ float16 caffe_cpu_strided_dot<float16,float16>(const int n, const float16* x,
 
 template <typename Dtype, typename Mtype>
 Mtype caffe_cpu_dot(const int n, const Dtype* x, const Dtype* y) {
-  return caffe_cpu_strided_dot(n, x, 1, y, 1);
+  return caffe_cpu_strided_dot<Dtype,Mtype>(n, x, 1, y, 1);
 }
 
 template

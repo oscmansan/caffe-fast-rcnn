@@ -36,7 +36,7 @@ all: test_layer.bin
 
 test_layer.bin: test_layer.cpp
 	@ echo CXX/LD -o $@
-	$(Q)g++ -std=c++11 -g $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../../lib
+	@ g++ -std=c++11 -g $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../../lib
 
 clean:
 	rm *.bin
