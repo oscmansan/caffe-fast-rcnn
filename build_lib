@@ -1,5 +1,7 @@
 PROJECT := caffe
 
+USE_CUDNN := 1
+
 BUILD_DIR := build
 BUILD_INCLUDE_DIR := $(BUILD_DIR)/src
 CUDA_DIR := /usr/local/cuda
@@ -67,12 +69,16 @@ NVCCFLAGS += -ccbin=g++ -Xcompiler -fPIC $(COMMON_FLAGS)
 
 FP16_CONVERSION := build/cuda/src/caffe/util/fp16_conversion.o
 FLOAT16 := build/src/caffe/util/float16.o
+COMMON := build/src/caffe/common.o
 MATH_FUNCTIONS := build/src/caffe/util/math_functions.o
 BLOB := build/src/caffe/blob.o
 LAYER := build/src/caffe/layer.o
-CONV_LAYER := build/cuda/src/caffe/layers/cudnn_conv_layer.o
+BASE_CONV_LAYER := build/src/caffe/layers/base_conv_layer.o
+CONV_LAYER := build/cuda/src/caffe/layers/conv_layer.o
+CXX_CUDNN_CONV_LAYER := build/src/caffe/layers/cudnn_conv_layer.o
+CU_CUDNN_CONV_LAYER := build/cuda/src/caffe/layers/cudnn_conv_layer.o
 
-all: proto FP16_CONVERSION FLOAT16 BLOB $(DYNAMIC_NAME)
+all: proto $(DYNAMIC_NAME)
 
 proto: $(PROTO_GEN_CC) $(PROTO_GEN_HEADER) $(PROTO_OBJS)
 
@@ -92,6 +98,10 @@ $(FLOAT16): src/caffe/util/float16.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
+$(COMMON): src/caffe/common.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
 $(MATH_FUNCTIONS): src/caffe/util/math_functions.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
@@ -104,7 +114,19 @@ $(LAYER): src/caffe/layer.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
-$(CONV_LAYER): src/caffe/layers/cudnn_conv_layer.cu
+$(BASE_CONV_LAYER): src/caffe/layers/base_conv_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CONV_LAYER): src/caffe/layers/conv_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_CUDNN_CONV_LAYER): src/caffe/layers/cudnn_conv_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_CUDNN_CONV_LAYER): src/caffe/layers/cudnn_conv_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
@@ -114,4 +136,4 @@ $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ cd $(BUILD_DIR)/lib; rm -f $(DYNAMIC_NAME_SHORT); ln -s $(DYNAMIC_VERSIONED_NAME_SHORT) $(DYNAMIC_NAME_SHORT)
 
 clean:
-	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(FLOAT16) $(BLOB) $(LAYER) $(CONV_LAYER)
+	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(FLOAT16) $(COMMON) $(BLOB) $(LAYER) $(BASE_CONV_LAYER) $(CONV_LAYER) $(CXX_CUDNN_CONV_LAYER) $(CU_CUDNN_CONV_LAYER)
