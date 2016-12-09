@@ -30,13 +30,29 @@ LIBRARIES += cblas atlas
 LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
 		$(foreach library,$(LIBRARIES),-l$(library))
 
+OBJS += /src/caffe/proto/caffe.pb.o
+OBJS += /src/caffe/util/float16.o
+OBJS += /cuda/src/caffe/util/fp16_conversion.o
+OBJS += /src/caffe/syncedmem.o
+OBJS += /src/caffe/common.o
+OBJS += /src/caffe/util/math_functions.o
+OBJS += /cuda/src/caffe/util/math_functions.o
+OBJS += /src/caffe/util/im2col.o
+OBJS += /cuda/src/caffe/util/im2col.o
+OBJS += /src/caffe/blob.o
+OBJS += /src/caffe/layer.o
+OBJS += /src/caffe/layers/base_conv_layer.o
+OBJS += /src/caffe/layers/conv_layer.o
+OBJS += /cuda/src/caffe/layers/conv_layer.o
+OBJS := $(foreach obj, $(OBJS), $(BUILD_DIR)$(obj))
+
 ORIGIN := \$$ORIGIN
 
 all: test_layer.bin
 
 test_layer.bin: test_layer.cpp
 	@ echo CXX/LD -o $@
-	@ g++ -std=c++11 -g $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../../lib
+	@ g++ -std=c++11 -g $< -o $@ $(OBJS) $(LINKFLAGS) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../../lib
 
 clean:
 	rm *.bin

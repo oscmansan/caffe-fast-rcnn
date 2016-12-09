@@ -2,6 +2,7 @@
 
 #include "caffe/common.hpp"
 #include "caffe/util/im2col.hpp"
+#include "caffe/util/get.hpp"
 
 namespace caffe {
 

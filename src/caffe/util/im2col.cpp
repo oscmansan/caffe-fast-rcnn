@@ -69,12 +69,12 @@ template void im2col_cpu<double,double>(const double* data_im, const int channel
 template void im2col_cpu<float16,float>(const float16* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
-    const int stride_w, const int dilation_h, const int dilation_w,,
+    const int stride_w, const int dilation_h, const int dilation_w,
 	float16* data_col);
 template void im2col_cpu<float16,float16>(const float16* data_im, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
-    const int stride_w, const int dilation_h, const int dilation_w,,
+    const int stride_w, const int dilation_h, const int dilation_w,
 	float16* data_col);
 #endif
 
@@ -155,7 +155,7 @@ void im2col_nd_cpu(const Dtype* data_im, const int num_spatial_axes,
     const int* kernel_shape, const int* pad, const int* stride,
     const int* dilation, Dtype* data_col) {
   const bool kIm2Col = true;
-  im2col_nd_core_cpu(data_im, kIm2Col, num_spatial_axes, im_shape, col_shape,
+  im2col_nd_core_cpu<Dtype,Mtype>(data_im, kIm2Col, num_spatial_axes, im_shape, col_shape,
                   kernel_shape, pad, stride, dilation, data_col);
 }
 
@@ -235,12 +235,12 @@ template void col2im_cpu<double,double>(const double* data_col, const int channe
 template void col2im_cpu<float16,float>(const float16* data_col, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
-	const int stride_w, const int dilation_h, const int dilation_w,,
+	const int stride_w, const int dilation_h, const int dilation_w,
 	float16* data_im);
   template<> void col2im_cpu<float16,float16>(const float16* data_col, const int channels,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w, const int stride_h,
-	const int stride_w, const int dilation_h, const int dilation_w,,
+	const int stride_w, const int dilation_h, const int dilation_w,
 	float16* data_im) {}
 
 #endif
@@ -251,7 +251,7 @@ void col2im_nd_cpu(const Dtype* data_col, const int num_spatial_axes,
     const int* kernel_shape, const int* pad, const int* stride,
     const int* dilation, Dtype* data_im) {
   const bool kIm2Col = false;
-  im2col_nd_core_cpu(data_col, kIm2Col, num_spatial_axes, im_shape, col_shape,
+  im2col_nd_core_cpu<Dtype,Mtype>(data_col, kIm2Col, num_spatial_axes, im_shape, col_shape,
                      kernel_shape, pad, stride, dilation, data_im);
 }
 
