@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <time.h>
 #include <assert.h>
 using namespace std;
 
@@ -27,9 +28,10 @@ public:
 
     void ConvolutionLayerTest() {
         // Fill bottom blob
-        vector<int> shape {1, 1, 7, 5};
+        vector<int> shape {1000, 3, 256, 256};
         bottom_blob->Reshape(shape);
-        init_rand(bottom_blob); print_blob(bottom_blob);
+        init_rand(bottom_blob); 
+        print_shape(bottom_blob);
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -44,17 +46,22 @@ public:
         std::shared_ptr<Layer<Dtype,Mtype> > layer(new ConvolutionLayer<Dtype,Mtype>(layer_param));
         layer->SetUp(bottom,top);
 
-        assert(top_blob->num() == 1);
+        assert(top_blob->num() == 1000);
         assert(top_blob->channels() == 4);
-        assert(top_blob->height() == 3);
-        assert(top_blob->width() == 2);
+        assert(top_blob->height() == 127);
+        assert(top_blob->width() == 127);
 
         Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
-        print_blob(weights);
+        print_shape(weights);
 
         // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
         layer->Forward(bottom,top);
-        print_blob(top_blob);
+        clock_gettime(CLOCK_REALTIME,&end);
+        print_shape(top_blob);
+        elapsed = diff(start,end);
+        cout<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
 private:
@@ -79,7 +86,7 @@ private:
         for (int i = 1; i < shape.size(); ++i) {
             cout << "," << shape[i];
         }
-        cout << ")" << endl;
+        cout << ")" << endl << flush;
     }
 
     void print_blob(Blob<Dtype,Mtype>* blob) {
@@ -95,7 +102,7 @@ private:
             }
             cout << endl;
         }
-        cout << endl;
+        cout << endl << flush;
     }
 
     void init_rand(Blob<Dtype,Mtype>* blob) {
@@ -110,6 +117,19 @@ private:
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(1.);
         }
+    }
+
+    timespec diff(timespec start, timespec end) {
+        timespec temp;
+        if ((end.tv_nsec-start.tv_nsec)<0) {
+            temp.tv_sec = end.tv_sec-start.tv_sec-1;
+            temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+        } 
+        else {
+            temp.tv_sec = end.tv_sec-start.tv_sec;
+            temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+       }
+       return temp;
     }
 };
 
