@@ -80,6 +80,8 @@ CXX_CONV_LAYER := build/src/caffe/layers/conv_layer.o
 CU_CONV_LAYER := build/cuda/src/caffe/layers/conv_layer.o
 CXX_CUDNN_CONV_LAYER := build/src/caffe/layers/cudnn_conv_layer.o
 CU_CUDNN_CONV_LAYER := build/cuda/src/caffe/layers/cudnn_conv_layer.o
+CXX_INNER_PRODUCT_LAYER := build/src/caffe/layers/inner_product_layer.o
+CU_INNER_PRODUCT_LAYER := build/cuda/src/caffe/layers/inner_product_layer.o
 
 all: proto $(DYNAMIC_NAME)
 
@@ -145,10 +147,18 @@ $(CU_CUDNN_CONV_LAYER): src/caffe/layers/cudnn_conv_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
+$(CXX_INNER_PRODUCT_LAYER): src/caffe/layers/inner_product_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_INNER_PRODUCT_LAYER): src/caffe/layers/inner_product_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
 $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ echo LD -o $@
 	@ g++ -shared -o $@ $(OBJS) $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS)
 	@ cd $(BUILD_DIR)/lib; rm -f $(DYNAMIC_NAME_SHORT); ln -s $(DYNAMIC_VERSIONED_NAME_SHORT) $(DYNAMIC_NAME_SHORT)
 
 clean:
-	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(CXX_IM2COL) $(CU_IM2COL) $(FLOAT16) $(COMMON) $(BLOB) $(LAYER) $(BASE_CONV_LAYER) $(CXX_CONV_LAYER) $(CU_CONV_LAYER) $(CXX_CUDNN_CONV_LAYER) $(CU_CUDNN_CONV_LAYER)
+	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(CXX_IM2COL) $(CU_IM2COL) $(FLOAT16) $(COMMON) $(BLOB) $(LAYER) $(BASE_CONV_LAYER) $(CXX_CONV_LAYER) $(CU_CONV_LAYER) $(CXX_CUDNN_CONV_LAYER) $(CU_CUDNN_CONV_LAYER) $(CXX_INNER_PRODUCT_LAYER) $(CU_INNER_PRODUCT_LAYER)

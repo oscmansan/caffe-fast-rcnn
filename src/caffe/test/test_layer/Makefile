@@ -44,6 +44,8 @@ OBJS += /src/caffe/layer.o
 OBJS += /src/caffe/layers/base_conv_layer.o
 OBJS += /src/caffe/layers/conv_layer.o
 OBJS += /cuda/src/caffe/layers/conv_layer.o
+OBJS += /src/caffe/layers/inner_product_layer.o
+OBJS += /cuda/src/caffe/layers/inner_product_layer.o
 OBJS := $(foreach obj, $(OBJS), $(BUILD_DIR)$(obj))
 
 ORIGIN := \$$ORIGIN

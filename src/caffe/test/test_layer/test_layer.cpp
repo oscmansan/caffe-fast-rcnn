@@ -9,6 +9,7 @@ using namespace std;
 #include "caffe/common.hpp"
 #include "caffe/filler.hpp"
 #include "caffe/layers/conv_layer.hpp"
+#include "caffe/layers/inner_product_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -28,10 +29,8 @@ public:
 
     void ConvolutionLayerTest() {
         // Fill bottom blob
-        vector<int> shape {1000, 3, 256, 256};
-        bottom_blob->Reshape(shape);
         init_rand(bottom_blob); 
-        print_shape(bottom_blob);
+        cout << "I: " << shape_to_string(bottom_blob) << endl;
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -46,25 +45,68 @@ public:
         std::shared_ptr<Layer<Dtype,Mtype> > layer(new ConvolutionLayer<Dtype,Mtype>(layer_param));
         layer->SetUp(bottom,top);
 
-        assert(top_blob->num() == 1000);
+        assert(top_blob->num() == num);
         assert(top_blob->channels() == 4);
         assert(top_blob->height() == 127);
         assert(top_blob->width() == 127);
 
         Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
-        print_shape(weights);
+        cout << "W: " << shape_to_string(weights) << endl;
 
         // Run forward pass
         timespec start,end,elapsed;
         clock_gettime(CLOCK_REALTIME,&start);
         layer->Forward(bottom,top);
         clock_gettime(CLOCK_REALTIME,&end);
-        print_shape(top_blob);
+        cout << "O: " << shape_to_string(top_blob) << endl;
         elapsed = diff(start,end);
-        cout<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+    }
+
+    void InnerProductLayerTest() {
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << shape_to_string(bottom_blob) << endl; 
+        print_blob(bottom_blob);
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+        InnerProductParameter* inner_product_param = layer_param.mutable_inner_product_param();
+        inner_product_param->set_num_output(10);
+        //inner_product_param->mutable_weight_filler()->set_type("constant");
+        //inner_product_param->mutable_weight_filler()->set_value(1.0);
+        inner_product_param->mutable_weight_filler()->set_type("uniform");
+
+        // Create layer
+        std::shared_ptr<Layer<Dtype,Mtype> > layer(new InnerProductLayer<Dtype,Mtype>(layer_param));
+        layer->SetUp(bottom,top);
+
+        assert(top_blob->num() == num);
+        assert(top_blob->channels() == 10);
+        assert(top_blob->height() == 1);
+        assert(top_blob->width() == 1);
+
+        Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
+        cout << "W: " << shape_to_string(weights) << endl;
+        print_blob(weights);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer->Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << shape_to_string(top_blob) << endl;
+        print_blob(top_blob);
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
 private:
+    int num = 2;
+    int channels = 3;
+    int height = 4;
+    int width = 5;
+
     Blob<Dtype,Mtype>* bottom_blob;
     Blob<Dtype,Mtype>* top_blob;
     vector<Blob<Dtype,Mtype>*> bottom;
@@ -74,29 +116,37 @@ private:
         // Create bottom blob
         bottom_blob = new Blob<Dtype,Mtype>();
         bottom.push_back(bottom_blob);
+
+        // Reshape bottom blob
+        vector<int> shape {num, channels, height, width};
+        bottom_blob->Reshape(shape);
         
         // Create top blob
         top_blob = new Blob<Dtype,Mtype>();
         top.push_back(top_blob);
     }
 
-    void print_shape(Blob<Dtype,Mtype>* blob) {
+    string shape_to_string(Blob<Dtype,Mtype>* blob) {
         vector<int> shape = blob->shape();
-        cout << "(" << shape[0];
+        string s = "";
+        s += "(" + to_string(shape[0]);
         for (int i = 1; i < shape.size(); ++i) {
-            cout << "," << shape[i];
+            s += "," + to_string(shape[i]);
         }
-        cout << ")" << endl << flush;
+        s += ")";
+        return s;
     }
 
     void print_blob(Blob<Dtype,Mtype>* blob) {
-        print_shape(blob);
         const Dtype* data = blob->cpu_data();
-        vector<int> shape = blob->shape();
-        for (int i = 0; i < shape[0]*shape[1]; ++i) {
-            for (int j = 0; j < shape[2]; ++j) {
-                for (int k = 0; k < shape[3]; ++k) {
-                    cout << data[i*shape[2]*shape[3]+j*shape[3]+k] << " ";
+        int n = blob->num();
+        int c = blob->channels();
+        int h = blob->height();
+        int w = blob->width();
+        for (int i = 0; i < n*c; ++i) {
+            for (int j = 0; j < h; ++j) {
+                for (int k = 0; k < w; ++k) {
+                    cout << data[i*h*w+j*w+k] << " ";
                 }
                 cout << endl;
             }
@@ -136,5 +186,6 @@ private:
 
 int main() {
     LayerTest test;
-    test.ConvolutionLayerTest();
+    //test.ConvolutionLayerTest();
+    test.InnerProductLayerTest();
 }

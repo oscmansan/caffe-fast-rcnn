@@ -126,7 +126,7 @@ class LayerRegisterer {
 
 #define REGISTER_LAYER_CREATOR(type, creator) \
   static LayerRegisterer<float,float> g_creator_f_##type(#type, creator<float,float>); \
-  static LayerRegisterer<double,double> g_creator_d_##type(#type, creator<double,double>) \
+  static LayerRegisterer<double,double> g_creator_d_##type(#type, creator<double,double>); \
   static LayerRegisterer<float16,CAFFE_FP16_MTYPE> g_creator_hh_##type(#type, creator<float16,CAFFE_FP16_MTYPE>)
 
 #define REGISTER_LAYER_CLASS(type)                                             \

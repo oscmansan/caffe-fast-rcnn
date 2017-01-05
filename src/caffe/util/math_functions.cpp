@@ -516,7 +516,7 @@ void caffe_rng_uniform<float16,float>(const int n, const float a, const float b,
                                float16* r);
   template<>
 void caffe_rng_uniform<float16,float16>(const int n, const float16 a, const float16 b,
-					float16* r) {}
+					float16* r) { caffe_rng_uniform<float16,float>(n,a,b,r); }
 #endif
 
 template <typename Dtype, typename Mtype>
