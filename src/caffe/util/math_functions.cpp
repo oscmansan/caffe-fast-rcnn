@@ -547,7 +547,7 @@ void caffe_rng_gaussian<float16,float>(const int n, const float mu,
                                 const float sigma, float16* r);
   template <>
 void caffe_rng_gaussian<float16,float16>(const int n, const float16 mu,
-					 const float16 sigma, float16* r) {}
+					 const float16 sigma, float16* r) { caffe_rng_gaussian<float16,float>(n,mu,sigma,r); }
 #endif
 
 template <typename Dtype, typename Mtype>

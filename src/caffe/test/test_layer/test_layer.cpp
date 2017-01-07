@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <time.h>
@@ -30,7 +31,8 @@ public:
     void ConvolutionLayerTest() {
         // Fill bottom blob
         init_rand(bottom_blob); 
-        cout << "I: " << shape_to_string(bottom_blob) << endl;
+        cout << "I: " << to_string(bottom_blob->shape()) << endl;
+        clog << to_string(bottom_blob) << endl;
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -38,8 +40,9 @@ public:
         conv_param->add_kernel_size(3);
         conv_param->add_stride(2);
         conv_param->set_num_output(4); // number of filters
-        conv_param->mutable_weight_filler()->set_type("constant"); // type of filters
-        conv_param->mutable_weight_filler()->set_value(1.0);
+        //conv_param->mutable_weight_filler()->set_type("constant"); // type of filters
+        //conv_param->mutable_weight_filler()->set_value(1.0);
+        //conv_param->mutable_weight_filler()->set_type("gaussian");
 
         // Create layer
         std::shared_ptr<Layer<Dtype,Mtype> > layer(new ConvolutionLayer<Dtype,Mtype>(layer_param));
@@ -47,18 +50,21 @@ public:
 
         assert(top_blob->num() == num);
         assert(top_blob->channels() == 4);
-        assert(top_blob->height() == 127);
-        assert(top_blob->width() == 127);
+        assert(top_blob->height() == 1);
+        assert(top_blob->width() == 2);
 
         Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
-        cout << "W: " << shape_to_string(weights) << endl;
+        init_rand(weights);
+        cout << "W: " << to_string(weights->shape()) << endl;
+        clog << to_string(weights) << endl;
 
         // Run forward pass
         timespec start,end,elapsed;
         clock_gettime(CLOCK_REALTIME,&start);
         layer->Forward(bottom,top);
         clock_gettime(CLOCK_REALTIME,&end);
-        cout << "O: " << shape_to_string(top_blob) << endl;
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
         elapsed = diff(start,end);
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
@@ -66,8 +72,8 @@ public:
     void InnerProductLayerTest() {
         // Fill bottom blob
         init_rand(bottom_blob);
-        cout << "I: " << shape_to_string(bottom_blob) << endl; 
-        print_blob(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -75,7 +81,7 @@ public:
         inner_product_param->set_num_output(10);
         //inner_product_param->mutable_weight_filler()->set_type("constant");
         //inner_product_param->mutable_weight_filler()->set_value(1.0);
-        inner_product_param->mutable_weight_filler()->set_type("uniform");
+        //inner_product_param->mutable_weight_filler()->set_type("uniform");
 
         // Create layer
         std::shared_ptr<Layer<Dtype,Mtype> > layer(new InnerProductLayer<Dtype,Mtype>(layer_param));
@@ -87,16 +93,17 @@ public:
         assert(top_blob->width() == 1);
 
         Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
-        cout << "W: " << shape_to_string(weights) << endl;
-        print_blob(weights);
+        init_rand(weights);
+        cout << "W: " << to_string(weights->shape()) << endl;
+        clog << to_string(weights) << endl;
 
         // Run forward pass
         timespec start,end,elapsed;
         clock_gettime(CLOCK_REALTIME,&start);
         layer->Forward(bottom,top);
         clock_gettime(CLOCK_REALTIME,&end);
-        cout << "O: " << shape_to_string(top_blob) << endl;
-        print_blob(top_blob);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
         elapsed = diff(start,end);
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
@@ -112,6 +119,8 @@ private:
     vector<Blob<Dtype,Mtype>*> bottom;
     vector<Blob<Dtype,Mtype>*> top;
 
+    ofstream ofs;
+
     void init() {
         // Create bottom blob
         bottom_blob = new Blob<Dtype,Mtype>();
@@ -124,35 +133,32 @@ private:
         // Create top blob
         top_blob = new Blob<Dtype,Mtype>();
         top.push_back(top_blob);
+
+        ofs.open("test_layer.log");
+        clog.rdbuf(ofs.rdbuf());
     }
 
-    string shape_to_string(Blob<Dtype,Mtype>* blob) {
-        vector<int> shape = blob->shape();
+    string to_string(vector<int> shape) {
         string s = "";
-        s += "(" + to_string(shape[0]);
+        s += "(" + std::to_string(shape[0]);
         for (int i = 1; i < shape.size(); ++i) {
-            s += "," + to_string(shape[i]);
+            s += "," + std::to_string(shape[i]);
         }
         s += ")";
         return s;
     }
 
-    void print_blob(Blob<Dtype,Mtype>* blob) {
+    string to_string(Blob<Dtype,Mtype>* blob) {
         const Dtype* data = blob->cpu_data();
         int n = blob->num();
         int c = blob->channels();
         int h = blob->height();
         int w = blob->width();
-        for (int i = 0; i < n*c; ++i) {
-            for (int j = 0; j < h; ++j) {
-                for (int k = 0; k < w; ++k) {
-                    cout << data[i*h*w+j*w+k] << " ";
-                }
-                cout << endl;
-            }
-            cout << endl;
+        string s = "";
+        for (int i = 0; i < n*c*h*w; ++i) {
+            s += std::to_string(data[i]) + " ";
         }
-        cout << endl << flush;
+        return s;
     }
 
     void init_rand(Blob<Dtype,Mtype>* blob) {
@@ -164,6 +170,7 @@ private:
 
     void init_ones(Blob<Dtype,Mtype>* blob) {
         Dtype* data = blob->mutable_cpu_data();
+        srand(1234);
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(1.);
         }
@@ -186,6 +193,6 @@ private:
 
 int main() {
     LayerTest test;
-    //test.ConvolutionLayerTest();
-    test.InnerProductLayerTest();
+    test.ConvolutionLayerTest();
+    //test.InnerProductLayerTest();
 }
