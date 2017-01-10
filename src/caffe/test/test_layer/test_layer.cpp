@@ -11,6 +11,7 @@ using namespace std;
 #include "caffe/filler.hpp"
 #include "caffe/layers/conv_layer.hpp"
 #include "caffe/layers/inner_product_layer.hpp"
+#include "caffe/layers/pooling_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -108,6 +109,38 @@ public:
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
+    void PoolingLayerTest() {
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+        PoolingParameter* pooling_param = layer_param.mutable_pooling_param();
+        pooling_param->set_kernel_size(2);
+        pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
+
+        // Create layer
+        std::shared_ptr<Layer<Dtype,Mtype> > layer(new PoolingLayer<Dtype,Mtype>(layer_param));
+        layer->SetUp(bottom,top);
+
+        assert(top_blob->num() == num);
+        assert(top_blob->channels() == channels);
+        assert(top_blob->height() == 3);
+        assert(top_blob->width() == 4);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer->Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+    }
+
 private:
     int num = 2;
     int channels = 3;
@@ -193,6 +226,7 @@ private:
 
 int main() {
     LayerTest test;
-    test.ConvolutionLayerTest();
+    //test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
+    test.PoolingLayerTest();
 }

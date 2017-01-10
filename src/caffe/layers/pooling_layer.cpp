@@ -203,10 +203,10 @@ void PoolingLayer<Dtype,Mtype>::Forward_cpu(const vector<Blob<Dtype,Mtype>*>& bo
             wstart = max(wstart, 0);
             hend = min(hend, height_);
             wend = min(wend, width_);
+            Mtype data_sum = Mtype(0);
             for (int h = hstart; h < hend; ++h) {
               for (int w = wstart; w < wend; ++w) {
-                top_data[ph * pooled_width_ + pw] +=
-                    bottom_data[h * width_ + w];
+                data_sum += Get<Mtype>(bottom_data[h * width_ + w]);
               }
             }
             top_data[ph * pooled_width_ + pw] = Get<Dtype>(data_sum / pool_size);

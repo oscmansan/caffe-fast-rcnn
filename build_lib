@@ -82,6 +82,8 @@ CXX_CUDNN_CONV_LAYER := build/src/caffe/layers/cudnn_conv_layer.o
 CU_CUDNN_CONV_LAYER := build/cuda/src/caffe/layers/cudnn_conv_layer.o
 CXX_INNER_PRODUCT_LAYER := build/src/caffe/layers/inner_product_layer.o
 CU_INNER_PRODUCT_LAYER := build/cuda/src/caffe/layers/inner_product_layer.o
+CXX_POOLING_LAYER := build/src/caffe/layers/pooling_layer.o
+CU_POOLING_LAYER := build/cuda/src/caffe/layers/pooling_layer.o
 
 all: proto $(DYNAMIC_NAME)
 
@@ -152,6 +154,14 @@ $(CXX_INNER_PRODUCT_LAYER): src/caffe/layers/inner_product_layer.cpp
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
 $(CU_INNER_PRODUCT_LAYER): src/caffe/layers/inner_product_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_POOLING_LAYER): src/caffe/layers/pooling_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_POOLING_LAYER): src/caffe/layers/pooling_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
