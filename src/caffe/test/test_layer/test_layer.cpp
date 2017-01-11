@@ -12,6 +12,7 @@ using namespace std;
 #include "caffe/layers/conv_layer.hpp"
 #include "caffe/layers/inner_product_layer.hpp"
 #include "caffe/layers/pooling_layer.hpp"
+#include "caffe/layers/split_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -141,6 +142,52 @@ public:
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
+    void SplitLayerTest() {
+        // Create second top blob
+        Blob<Dtype,Mtype>* top_blob_2 = new Blob<Dtype,Mtype>();
+        top.push_back(top_blob_2);
+
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+        
+        // Create layer
+        SplitLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        assert(top_blob->num() == num);
+        assert(top_blob->channels() == channels);
+        assert(top_blob->height() == height);
+        assert(top_blob->width() == width);
+        assert(top_blob_2->num() == num);
+        assert(top_blob_2->channels() == channels);
+        assert(top_blob_2->height() == height);
+        assert(top_blob_2->width() == width);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer.Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        cout << "O: " << to_string(top_blob_2->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        clog << to_string(top_blob_2) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+
+        // Assert correct split
+        for (int i = 0; i < bottom_blob->count(); ++i) {
+            Dtype bottom_value = bottom_blob->cpu_data()[i];
+            assert(top_blob->cpu_data()[i] == bottom_value);
+            assert(top_blob_2->cpu_data()[i] == bottom_value);
+        }
+    }
+
 private:
     int num = 2;
     int channels = 3;
@@ -228,5 +275,6 @@ int main() {
     LayerTest test;
     //test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
-    test.PoolingLayerTest();
+    //test.PoolingLayerTest();
+    test.SplitLayerTest();
 }

@@ -48,6 +48,8 @@ OBJS += /src/caffe/layers/inner_product_layer.o
 OBJS += /cuda/src/caffe/layers/inner_product_layer.o
 OBJS += /src/caffe/layers/pooling_layer.o
 OBJS += /cuda/src/caffe/layers/pooling_layer.o
+OBJS += /src/caffe/layers/split_layer.o
+OBJS += /cuda/src/caffe/layers/split_layer.o
 OBJS := $(foreach obj, $(OBJS), $(BUILD_DIR)$(obj))
 
 ORIGIN := \$$ORIGIN
