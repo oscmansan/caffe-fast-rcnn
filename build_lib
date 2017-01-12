@@ -86,6 +86,9 @@ CXX_POOLING_LAYER := build/src/caffe/layers/pooling_layer.o
 CU_POOLING_LAYER := build/cuda/src/caffe/layers/pooling_layer.o
 CXX_SPLIT_LAYER := build/src/caffe/layers/split_layer.o
 CU_SPLIT_LAYER := build/cuda/src/caffe/layers/split_layer.o
+NEURON_LAYER := build/src/caffe/layers/neuron_layer.o
+CXX_RELU_LAYER := build/src/caffe/layers/relu_layer.o
+CU_RELU_LAYER := build/cuda/src/caffe/layers/relu_layer.o
 
 all: proto $(DYNAMIC_NAME)
 
@@ -171,7 +174,19 @@ $(CXX_SPLIT_LAYER): src/caffe/layers/split_layer.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
+$(NEURON_LAYER): src/caffe/layers/neuron_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
 $(CU_SPLIT_LAYER): src/caffe/layers/split_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_RELU_LAYER): src/caffe/layers/relu_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_RELU_LAYER): src/caffe/layers/relu_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 

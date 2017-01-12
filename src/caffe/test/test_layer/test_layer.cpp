@@ -13,6 +13,7 @@ using namespace std;
 #include "caffe/layers/inner_product_layer.hpp"
 #include "caffe/layers/pooling_layer.hpp"
 #include "caffe/layers/split_layer.hpp"
+#include "caffe/layers/relu_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -185,6 +186,40 @@ public:
             Dtype bottom_value = bottom_blob->cpu_data()[i];
             assert(top_blob->cpu_data()[i] == bottom_value);
             assert(top_blob_2->cpu_data()[i] == bottom_value);
+        }    
+    }
+
+    void ReLULayerTest() {
+        // Fill bottom blob
+        FillerParameter filler_param;
+        GaussianFiller<Dtype,Mtype> filler(filler_param);
+        filler.Fill(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+           
+        // Set up layer parameters
+        LayerParameter layer_param;
+
+        // Create layer
+        ReLULayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer.Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+        
+        // Check values
+        const Dtype* bottom_data = bottom_blob->cpu_data();
+        const Dtype* top_data = top_blob->cpu_data();
+        for (int i = 0; i < bottom_blob->count(); ++i) {
+            assert(top_data[i] >= 0.);
+            assert(top_data[i] == 0 || top_data[i] == bottom_data[i]);
         }
     }
 
@@ -276,5 +311,6 @@ int main() {
     //test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
     //test.PoolingLayerTest();
-    test.SplitLayerTest();
+    //test.SplitLayerTest();
+    test.ReLULayerTest();
 }
