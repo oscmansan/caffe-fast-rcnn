@@ -31,12 +31,12 @@ void SoftmaxLayer<Dtype,Mtype>::Forward_cpu(const vector<Blob<Dtype,Mtype>*>& bo
   Dtype* scale_data = scale_.mutable_cpu_data();
   int channels = bottom[0]->shape(softmax_axis_);
   int dim = bottom[0]->count() / outer_num_;
-  caffe_copy(bottom[0]->count(), bottom_data, top_data);
+  caffe_copy<Dtype,Mtype>(bottom[0]->count(), bottom_data, top_data);
   // We need to subtract the max to avoid numerical issues, compute the exp,
   // and then normalize.
   for (int i = 0; i < outer_num_; ++i) {
     // initialize scale_data to the first plane
-    caffe_copy(inner_num_, bottom_data + i * dim, scale_data);
+    caffe_copy<Dtype,Mtype>(inner_num_, bottom_data + i * dim, scale_data);
     for (int j = 0; j < channels; j++) {
       for (int k = 0; k < inner_num_; k++) {
         scale_data[k] = Get<Dtype>( std::max(Get<Mtype>(scale_data[k]),
@@ -53,7 +53,7 @@ void SoftmaxLayer<Dtype,Mtype>::Forward_cpu(const vector<Blob<Dtype,Mtype>*>& bo
 				top_data, sum_multiplier_.cpu_data(), Mtype(0.), scale_data);
     // division
     for (int j = 0; j < channels; j++) {
-      caffe_div(inner_num_, top_data, scale_data, top_data);
+      caffe_div<Dtype,Mtype>(inner_num_, top_data, scale_data, top_data);
       top_data += inner_num_;
     }
   }
@@ -69,7 +69,7 @@ void SoftmaxLayer<Dtype,Mtype>::Backward_cpu(const vector<Blob<Dtype,Mtype>*>& t
   Dtype* scale_data = scale_.mutable_cpu_data();
   int channels = top[0]->shape(softmax_axis_);
   int dim = top[0]->count() / outer_num_;
-  caffe_copy(top[0]->count(), top_diff, bottom_diff);
+  caffe_copy<Dtype,Mtype>(top[0]->count(), top_diff, bottom_diff);
   for (int i = 0; i < outer_num_; ++i) {
     // compute dot(top_diff, top_data) and subtract them from the bottom diff
     for (int k = 0; k < inner_num_; ++k) {
@@ -82,7 +82,7 @@ void SoftmaxLayer<Dtype,Mtype>::Backward_cpu(const vector<Blob<Dtype,Mtype>*>& t
 				Mtype(-1.), sum_multiplier_.cpu_data(), scale_data, Mtype(1.), bottom_diff + i * dim);
   }
   // elementwise multiplication
-  caffe_mul(top[0]->count(), bottom_diff, top_data, bottom_diff);
+  caffe_mul<Dtype,Mtype>(top[0]->count(), bottom_diff, top_data, bottom_diff);
 }
 
 

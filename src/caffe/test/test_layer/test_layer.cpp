@@ -14,6 +14,8 @@ using namespace std;
 #include "caffe/layers/pooling_layer.hpp"
 #include "caffe/layers/split_layer.hpp"
 #include "caffe/layers/relu_layer.hpp"
+#include "caffe/layers/softmax_layer.hpp"
+#include "caffe/layers/cudnn_softmax_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -223,6 +225,30 @@ public:
         }
     }
 
+    void SoftmaxLayerTest() {
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+
+        // Create layer
+        CuDNNSoftmaxLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer.Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+    }
+
 private:
     int num = 2;
     int channels = 3;
@@ -312,5 +338,6 @@ int main() {
     //test.InnerProductLayerTest();
     //test.PoolingLayerTest();
     //test.SplitLayerTest();
-    test.ReLULayerTest();
+    //test.ReLULayerTest();
+    test.SoftmaxLayerTest();
 }

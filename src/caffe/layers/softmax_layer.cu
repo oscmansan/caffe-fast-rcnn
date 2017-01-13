@@ -90,7 +90,7 @@ void SoftmaxLayer<Dtype,Mtype>::Forward_gpu(const vector<Blob<Dtype,Mtype>*>& bo
   Dtype* scale_data = scale_.mutable_gpu_data();
   int count = bottom[0]->count();
   int channels = top[0]->shape(softmax_axis_);
-  caffe_copy(count, bottom_data, top_data);
+  caffe_copy<Dtype,Mtype>(count, bottom_data, top_data);
   // We need to subtract the max to avoid numerical issues, compute the exp,
   // and then normalize.
   // compute max
@@ -128,7 +128,7 @@ void SoftmaxLayer<Dtype,Mtype>::Backward_gpu(const vector<Blob<Dtype,Mtype>*>& t
   Dtype* scale_data = scale_.mutable_gpu_data();
   int count = top[0]->count();
   int channels = top[0]->shape(softmax_axis_);
-  caffe_copy(count, top_diff, bottom_diff);
+  caffe_copy<Dtype,Mtype>(count, top_diff, bottom_diff);
   // Compute inner1d(top_diff, top_data) and subtract them from the bottom diff.
   // NOLINT_NEXT_LINE(whitespace/operators)
   kernel_channel_dot<Dtype,Mtype><<<CAFFE_GET_BLOCKS(outer_num_ * inner_num_),

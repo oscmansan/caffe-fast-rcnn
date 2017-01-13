@@ -32,6 +32,7 @@ LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
 
 OBJS += /src/caffe/proto/caffe.pb.o
 OBJS += /src/caffe/util/float16.o
+OBJS += /src/caffe/util/cudnn.o
 OBJS += /cuda/src/caffe/util/fp16_conversion.o
 OBJS += /src/caffe/syncedmem.o
 OBJS += /src/caffe/common.o
@@ -53,6 +54,10 @@ OBJS += /cuda/src/caffe/layers/split_layer.o
 OBJS += /src/caffe/layers/neuron_layer.o
 OBJS += /src/caffe/layers/relu_layer.o
 OBJS += /cuda/src/caffe/layers/relu_layer.o
+OBJS += /src/caffe/layers/softmax_layer.o
+OBJS += /cuda/src/caffe/layers/softmax_layer.o
+OBJS += /src/caffe/layers/cudnn_softmax_layer.o
+OBJS += /cuda/src/caffe/layers/cudnn_softmax_layer.o
 OBJS := $(foreach obj, $(OBJS), $(BUILD_DIR)$(obj))
 
 ORIGIN := \$$ORIGIN

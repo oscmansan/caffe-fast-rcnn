@@ -69,6 +69,7 @@ NVCCFLAGS += -ccbin=g++ -Xcompiler -fPIC $(COMMON_FLAGS)
 
 FP16_CONVERSION := build/cuda/src/caffe/util/fp16_conversion.o
 FLOAT16 := build/src/caffe/util/float16.o
+CUDNN := build/src/caffe/util/cudnn.o
 COMMON := build/src/caffe/common.o
 MATH_FUNCTIONS := build/src/caffe/util/math_functions.o
 CXX_IM2COL := build/src/caffe/util/im2col.o
@@ -89,6 +90,10 @@ CU_SPLIT_LAYER := build/cuda/src/caffe/layers/split_layer.o
 NEURON_LAYER := build/src/caffe/layers/neuron_layer.o
 CXX_RELU_LAYER := build/src/caffe/layers/relu_layer.o
 CU_RELU_LAYER := build/cuda/src/caffe/layers/relu_layer.o
+CXX_SOFTMAX_LAYER := build/src/caffe/layers/softmax_layer.o
+CU_SOFTMAX_LAYER := build/cuda/src/caffe/layers/softmax_layer.o
+CXX_CUDNN_SOFTMAX_LAYER := build/src/caffe/layers/cudnn_softmax_layer.o
+CU_CUDNN_SOFTMAX_LAYER := build/cuda/src/caffe/layers/cudnn_softmax_layer.o
 
 all: proto $(DYNAMIC_NAME)
 
@@ -107,6 +112,10 @@ $(FP16_CONVERSION): src/caffe/util/fp16_conversion.cu
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
 $(FLOAT16): src/caffe/util/float16.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CUDNN): src/caffe/util/cudnn.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
@@ -187,6 +196,22 @@ $(CXX_RELU_LAYER): src/caffe/layers/relu_layer.cpp
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
 $(CU_RELU_LAYER): src/caffe/layers/relu_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_SOFTMAX_LAYER): src/caffe/layers/softmax_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_SOFTMAX_LAYER): src/caffe/layers/softmax_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_CUDNN_SOFTMAX_LAYER): src/caffe/layers/cudnn_softmax_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_CUDNN_SOFTMAX_LAYER): src/caffe/layers/cudnn_softmax_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
