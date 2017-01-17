@@ -247,6 +247,35 @@ public:
         clog << to_string(top_blob) << endl;
         elapsed = diff(start,end);
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+
+        // Test normalization
+        for (int i = 0; i < num; ++i) {
+            for (int k = 0; k < height; ++k) {
+                for (int l = 0; l < width; ++l) {
+                    // Test sum
+                    Dtype sum = 0;
+                    for (int j = 0; j < channels; ++j) {
+                        sum += top_blob->data_at(i,j,k,l);
+                    }
+                    assert(sum >= 0.999);
+                    assert(sum <= 1.001);
+
+                    // Test exact values
+                    Dtype scale = 0;
+                    for (int j = 0; j < channels; ++j) {
+                        scale += exp(bottom_blob->data_at(i,j,k,l));
+                    }
+                    for (int j = 0; j < channels; ++j) {
+                        Dtype computed_value = top_blob->data_at(i,j,k,l);
+                        Dtype expected_value = exp(bottom_blob->data_at(i,j,k,l))/scale;
+                        //cout << computed_value << " " << expected_value << endl;
+                        Dtype e = 1e-3;
+                        assert(computed_value + e >= expected_value);
+                        assert(computed_value - e <= expected_value);
+                    }
+                }
+            }
+        }
     }
 
 private:
