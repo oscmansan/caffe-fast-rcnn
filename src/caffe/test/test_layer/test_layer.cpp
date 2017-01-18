@@ -15,11 +15,11 @@ using namespace std;
 #include "caffe/layers/split_layer.hpp"
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
-#include "caffe/layers/cudnn_softmax_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
 #include "caffe/layers/cudnn_conv_layer.hpp"
+#include "caffe/layers/cudnn_softmax_layer.hpp"
 #endif
 using namespace caffe;
 
@@ -34,6 +34,8 @@ public:
     }
 
     void ConvolutionLayerTest() {
+        cout << "## Testing ConvolutionLayer ############" << endl;
+
         // Fill bottom blob
         init_rand(bottom_blob); 
         cout << "I: " << to_string(bottom_blob->shape()) << endl;
@@ -75,6 +77,8 @@ public:
     }
 
     void InnerProductLayerTest() {
+        cout << "## Testing InnerProductLayer ###########" << endl;
+
         // Fill bottom blob
         init_rand(bottom_blob);
         cout << "I: " << to_string(bottom_blob->shape()) << endl; 
@@ -114,6 +118,8 @@ public:
     }
 
     void PoolingLayerTest() {
+        cout << "## Testing PoolingLayer ################" << endl;
+
         // Fill bottom blob
         init_rand(bottom_blob);
         cout << "I: " << to_string(bottom_blob->shape()) << endl; 
@@ -146,6 +152,8 @@ public:
     }
 
     void SplitLayerTest() {
+        cout << "## Testing SplitLayer ##################" << endl;
+
         // Create second top blob
         Blob<Dtype,Mtype>* top_blob_2 = new Blob<Dtype,Mtype>();
         top.push_back(top_blob_2);
@@ -188,10 +196,16 @@ public:
             Dtype bottom_value = bottom_blob->cpu_data()[i];
             assert(top_blob->cpu_data()[i] == bottom_value);
             assert(top_blob_2->cpu_data()[i] == bottom_value);
-        }    
+        }
+
+        top.clear();
+        top_blob = new Blob<Dtype,Mtype>();
+        top.push_back(top_blob);   
     }
 
     void ReLULayerTest() {
+        cout << "## Testing ReLULayer ###################" << endl;
+
         // Fill bottom blob
         FillerParameter filler_param;
         GaussianFiller<Dtype,Mtype> filler(filler_param);
@@ -226,6 +240,8 @@ public:
     }
 
     void SoftmaxLayerTest() {
+        cout << "## Testing SoftmaxLayer ################" << endl;
+
         // Fill bottom blob
         init_rand(bottom_blob);
         cout << "I: " << to_string(bottom_blob->shape()) << endl; 
@@ -333,6 +349,7 @@ private:
 
     void init_rand(Blob<Dtype,Mtype>* blob) {
         Dtype* data = blob->mutable_cpu_data();
+        srand(1234);
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(float(rand())/float(RAND_MAX));
         }
@@ -340,7 +357,6 @@ private:
 
     void init_ones(Blob<Dtype,Mtype>* blob) {
         Dtype* data = blob->mutable_cpu_data();
-        srand(1234);
         for (int i = 0; i < blob->count(); ++i) {
             data[i] = Get<float16>(1.);
         }
@@ -366,7 +382,7 @@ int main() {
     //test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
     //test.PoolingLayerTest();
-    //test.SplitLayerTest();
+    test.SplitLayerTest();
     //test.ReLULayerTest();
     test.SoftmaxLayerTest();
 }
