@@ -15,6 +15,7 @@ using namespace std;
 #include "caffe/layers/split_layer.hpp"
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
+#include "caffe/layers/reshape_layer.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -198,9 +199,10 @@ public:
             assert(top_blob_2->cpu_data()[i] == bottom_value);
         }
 
+        // TODO: solve conflict with SoftmaxLayerTest
         top.clear();
         top_blob = new Blob<Dtype,Mtype>();
-        top.push_back(top_blob);   
+        top.push_back(top_blob);
     }
 
     void ReLULayerTest() {
@@ -279,7 +281,8 @@ public:
                     // Test exact values
                     Dtype scale = 0;
                     for (int j = 0; j < channels; ++j) {
-                        scale += exp(bottom_blob->data_at(i,j,k,l));
+                        // TODO: substract max to avoid numerical issues
+                        scale += Get<Dtype>(exp(bottom_blob->data_at(i,j,k,l)));
                     }
                     for (int j = 0; j < channels; ++j) {
                         Dtype computed_value = top_blob->data_at(i,j,k,l);
@@ -292,6 +295,131 @@ public:
                 }
             }
         }
+    }
+
+    void TestFlattenOutputSizes() {
+        // Set up layer parameters
+        LayerParameter layer_param;
+        BlobShape* blob_shape = layer_param.mutable_reshape_param()->mutable_shape();
+        blob_shape->add_dim(0);
+        blob_shape->add_dim(-1),
+        blob_shape->add_dim(1);
+        blob_shape->add_dim(1);
+       
+        // Create layer
+        ReshapeLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        assert(top_blob->num() == num);
+        assert(top_blob->channels() == channels * height * width);
+        assert(top_blob->height() == 1);
+        assert(top_blob->width() == 1);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer.Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+
+        // Test exact values
+        for (int i = 0; i < num; ++i) {
+            for (int j = 0; j < channels * height * width; ++j) {
+                assert(top_blob->data_at(i, j, 0, 0) == bottom_blob->data_at(i, j / (height * width), (j / width) % height, j % width));
+            }
+        }
+    }
+
+    void TestInsertSingletonAxesStart() { 
+        // Set up layer parameters
+        LayerParameter layer_param;
+        ReshapeParameter* reshape_param = layer_param.mutable_reshape_param();
+        reshape_param->set_axis(0);
+        reshape_param->set_num_axes(0);
+        BlobShape* blob_shape = reshape_param->mutable_shape();
+        blob_shape->add_dim(1),
+        blob_shape->add_dim(1);
+        blob_shape->add_dim(1);
+       
+        // Create layer
+        ReshapeLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        assert(top_blob->num_axes() == 7);
+        assert(top_blob->shape(0) == 1);
+        assert(top_blob->shape(1) == 1);
+        assert(top_blob->shape(2) == 1);
+        assert(top_blob->shape(3) == num);
+        assert(top_blob->shape(4) == channels);
+        assert(top_blob->shape(5) == height);
+        assert(top_blob->shape(6) == width);
+    }
+
+    void TestInsertSingletonAxesMiddle() { 
+        // Set up layer parameters
+        LayerParameter layer_param;
+        ReshapeParameter* reshape_param = layer_param.mutable_reshape_param();
+        reshape_param->set_axis(2);
+        reshape_param->set_num_axes(0);
+        BlobShape* blob_shape = reshape_param->mutable_shape();
+        blob_shape->add_dim(1),
+        blob_shape->add_dim(1);
+        blob_shape->add_dim(1);
+       
+        // Create layer
+        ReshapeLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        assert(top_blob->num_axes() == 7);
+        assert(top_blob->shape(0) == num);
+        assert(top_blob->shape(1) == channels);
+        assert(top_blob->shape(2) == 1);
+        assert(top_blob->shape(3) == 1);
+        assert(top_blob->shape(4) == 1);
+        assert(top_blob->shape(5) == height);
+        assert(top_blob->shape(6) == width);
+    }
+    
+    void TestInsertSingletonAxesEnd() { 
+        // Set up layer parameters
+        LayerParameter layer_param;
+        ReshapeParameter* reshape_param = layer_param.mutable_reshape_param();
+        reshape_param->set_axis(-1);
+        reshape_param->set_num_axes(0);
+        BlobShape* blob_shape = reshape_param->mutable_shape();
+        blob_shape->add_dim(1),
+        blob_shape->add_dim(1);
+        blob_shape->add_dim(1);
+       
+        // Create layer
+        ReshapeLayer<Dtype,Mtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        assert(top_blob->num_axes() == 7);
+        assert(top_blob->shape(0) == num);
+        assert(top_blob->shape(1) == channels);
+        assert(top_blob->shape(2) == height);
+        assert(top_blob->shape(3) == width);
+        assert(top_blob->shape(4) == 1);
+        assert(top_blob->shape(5) == 1);
+        assert(top_blob->shape(6) == 1);
+    }
+
+    void ReshapeLayerTest() {
+        cout << "## Testing ReshapeLayer ################" << endl;
+
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        TestFlattenOutputSizes();
+        TestInsertSingletonAxesStart();
+        TestInsertSingletonAxesMiddle();
+        TestInsertSingletonAxesEnd();
     }
 
 private:
@@ -382,7 +510,8 @@ int main() {
     //test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
     //test.PoolingLayerTest();
-    test.SplitLayerTest();
+    //test.SplitLayerTest();
     //test.ReLULayerTest();
-    test.SoftmaxLayerTest();
+    //test.SoftmaxLayerTest();
+    test.ReshapeLayerTest();
 }
