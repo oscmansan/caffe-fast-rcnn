@@ -95,6 +95,8 @@ CU_SOFTMAX_LAYER := build/cuda/src/caffe/layers/softmax_layer.o
 CXX_CUDNN_SOFTMAX_LAYER := build/src/caffe/layers/cudnn_softmax_layer.o
 CU_CUDNN_SOFTMAX_LAYER := build/cuda/src/caffe/layers/cudnn_softmax_layer.o
 CXX_RESHAPE_LAYER := build/src/caffe/layers/reshape_layer.o
+CXX_ROI_POOLING_LAYER := build/src/caffe/layers/roi_pooling_layer.o
+CU_ROI_POOLING_LAYER := build/cuda/src/caffe/layers/roi_pooling_layer.o
 
 
 all: proto $(DYNAMIC_NAME)
@@ -220,6 +222,14 @@ $(CU_CUDNN_SOFTMAX_LAYER): src/caffe/layers/cudnn_softmax_layer.cu
 $(CXX_RESHAPE_LAYER): src/caffe/layers/reshape_layer.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CXX_ROI_POOLING_LAYER): src/caffe/layers/roi_pooling_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_ROI_POOLING_LAYER): src/caffe/layers/roi_pooling_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
 $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ echo LD -o $@

@@ -29,7 +29,7 @@ namespace caffe {
  * gradients with respect to their input Blob%s, given the error gradients with
  * their output Blob%s.
  */
-template <typename Dtype, typename Mtype>
+template <typename Dtype, typename Mtype = Dtype>
 class Layer {
  public:
   /**

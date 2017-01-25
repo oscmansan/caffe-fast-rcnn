@@ -27,7 +27,7 @@ void ROIPoolingLayer<Dtype,Mtype>::LayerSetUp(const vector<Blob<Dtype,Mtype>*>& 
   pooled_height_ = roi_pool_param.pooled_h();
   pooled_width_ = roi_pool_param.pooled_w();
   spatial_scale_ = roi_pool_param.spatial_scale();
-  LOG(INFO) << "Spatial scale: " << spatial_scale_;
+  //LOG(INFO) << "Spatial scale: " << spatial_scale_;
 }
 
 template <typename Dtype, typename Mtype>
@@ -52,9 +52,9 @@ void ROIPoolingLayer<Dtype,Mtype>::Forward_cpu(const vector<Blob<Dtype,Mtype>*>&
   int batch_size = bottom[0]->num();
   int top_count = top[0]->count();
   Dtype* top_data = top[0]->mutable_cpu_data();
-  caffe_set(top_count, Get<Dtype>(- maxDtype<Dtype>()), top_data);
+  caffe_set<Dtype>(top_count, Get<Dtype>(- maxDtype<Dtype>()), top_data);
   int* argmax_data = max_idx_.mutable_cpu_data();
-  caffe_set(top_count, Get<Dtype>(-1), argmax_data);
+  caffe_set(top_count, -1, argmax_data);
 
   // For each ROI R = [batch_index x1 y1 x2 y2]: max pool over R
   for (int n = 0; n < num_rois; ++n) {

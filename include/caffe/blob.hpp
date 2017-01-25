@@ -20,7 +20,7 @@ namespace caffe {
  *
  * TODO(dox): more thorough description.
  */
-template <typename Dtype, typename Mtype>
+template <typename Dtype, typename Mtype = Dtype>
 class Blob {
  public:
   Blob()

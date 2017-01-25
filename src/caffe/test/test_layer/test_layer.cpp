@@ -16,6 +16,7 @@ using namespace std;
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
 #include "caffe/layers/reshape_layer.hpp"
+#include "caffe/fast_rcnn_layers.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -422,6 +423,63 @@ public:
         TestInsertSingletonAxesEnd();
     }
 
+    void ROIPoolingLayerTest() {
+        cout << "## Testing ROIPoolingLayer ################" << endl;
+
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+        ROIPoolingParameter* roi_pooling_param = layer_param.mutable_roi_pooling_param();
+        roi_pooling_param->set_pooled_h(2);
+        roi_pooling_param->set_pooled_w(2);
+
+        // Define ROIs
+        Blob<Dtype>* rois = new Blob<Dtype>(4, 5, 1, 1);
+        int i = 0;
+        rois->mutable_cpu_data()[0 + 5*i] = 0; //caffe_rng_rand() % 4;
+        rois->mutable_cpu_data()[1 + 5*i] = 0; // x1 < 5
+        rois->mutable_cpu_data()[2 + 5*i] = 0; // y1 < 4
+        rois->mutable_cpu_data()[3 + 5*i] = 1; // x2 < 5
+        rois->mutable_cpu_data()[4 + 5*i] = 1; // y2 < 4
+        i = 1;
+        rois->mutable_cpu_data()[0 + 5*i] = 2;
+        rois->mutable_cpu_data()[1 + 5*i] = 3; // x1 < 5
+        rois->mutable_cpu_data()[2 + 5*i] = 0; // y1 < 4
+        rois->mutable_cpu_data()[3 + 5*i] = 4; // x2 < 5
+        rois->mutable_cpu_data()[4 + 5*i] = 1; // y2 < 4
+        i = 2;
+        rois->mutable_cpu_data()[0 + 5*i] = 1;
+        rois->mutable_cpu_data()[1 + 5*i] = 0; // x1 < 5
+        rois->mutable_cpu_data()[2 + 5*i] = 2; // y1 < 4
+        rois->mutable_cpu_data()[3 + 5*i] = 1; // x2 < 5
+        rois->mutable_cpu_data()[4 + 5*i] = 3; // y2 < 4
+        i = 3;
+        rois->mutable_cpu_data()[0 + 5*i] = 0;
+        rois->mutable_cpu_data()[1 + 5*i] = 3; // x1 < 5
+        rois->mutable_cpu_data()[2 + 5*i] = 2; // y1 < 4
+        rois->mutable_cpu_data()[3 + 5*i] = 4; // x2 < 5
+        rois->mutable_cpu_data()[4 + 5*i] = 3; // y2 < 4
+        bottom.push_back(rois);
+
+        // Create layer
+        ROIPoolingLayer<Dtype> layer(layer_param);
+        layer.SetUp(bottom,top);
+
+        // Run forward pass
+        timespec start,end,elapsed;
+        clock_gettime(CLOCK_REALTIME,&start);
+        layer.Forward(bottom,top);
+        clock_gettime(CLOCK_REALTIME,&end);
+        cout << "O: " << to_string(top_blob->shape()) << endl;
+        clog << to_string(top_blob) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+    }
+
 private:
     int num = 2;
     int channels = 3;
@@ -513,5 +571,6 @@ int main() {
     //test.SplitLayerTest();
     //test.ReLULayerTest();
     //test.SoftmaxLayerTest();
-    test.ReshapeLayerTest();
+    //test.ReshapeLayerTest();
+    test.ROIPoolingLayerTest();
 }

@@ -59,6 +59,8 @@ OBJS += /cuda/src/caffe/layers/softmax_layer.o
 OBJS += /src/caffe/layers/cudnn_softmax_layer.o
 OBJS += /cuda/src/caffe/layers/cudnn_softmax_layer.o
 OBJS += /src/caffe/layers/reshape_layer.o
+OBJS += /src/caffe/layers/roi_pooling_layer.o
+OBJS += /cuda/src/caffe/layers/roi_pooling_layer.o
 OBJS := $(foreach obj, $(OBJS), $(BUILD_DIR)$(obj))
 
 ORIGIN := \$$ORIGIN
