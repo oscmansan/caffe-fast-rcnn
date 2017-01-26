@@ -434,39 +434,39 @@ public:
         // Set up layer parameters
         LayerParameter layer_param;
         ROIPoolingParameter* roi_pooling_param = layer_param.mutable_roi_pooling_param();
-        roi_pooling_param->set_pooled_h(2);
-        roi_pooling_param->set_pooled_w(2);
+        roi_pooling_param->set_pooled_h(1);
+        roi_pooling_param->set_pooled_w(1);
 
         // Define ROIs
-        Blob<Dtype>* rois = new Blob<Dtype>(4, 5, 1, 1);
+        Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>(4, 5, 1, 1);
         int i = 0;
-        rois->mutable_cpu_data()[0 + 5*i] = 0; //caffe_rng_rand() % 4;
-        rois->mutable_cpu_data()[1 + 5*i] = 0; // x1 < 5
-        rois->mutable_cpu_data()[2 + 5*i] = 0; // y1 < 4
-        rois->mutable_cpu_data()[3 + 5*i] = 1; // x2 < 5
-        rois->mutable_cpu_data()[4 + 5*i] = 1; // y2 < 4
+        rois->mutable_cpu_data()[0 + 5*i] = 0;
+        rois->mutable_cpu_data()[1 + 5*i] = 0;
+        rois->mutable_cpu_data()[2 + 5*i] = 0;
+        rois->mutable_cpu_data()[3 + 5*i] = 2;
+        rois->mutable_cpu_data()[4 + 5*i] = 2;
         i = 1;
-        rois->mutable_cpu_data()[0 + 5*i] = 2;
-        rois->mutable_cpu_data()[1 + 5*i] = 3; // x1 < 5
-        rois->mutable_cpu_data()[2 + 5*i] = 0; // y1 < 4
-        rois->mutable_cpu_data()[3 + 5*i] = 4; // x2 < 5
-        rois->mutable_cpu_data()[4 + 5*i] = 1; // y2 < 4
+        rois->mutable_cpu_data()[0 + 5*i] = 0;
+        rois->mutable_cpu_data()[1 + 5*i] = 2;
+        rois->mutable_cpu_data()[2 + 5*i] = 0;
+        rois->mutable_cpu_data()[3 + 5*i] = 4;
+        rois->mutable_cpu_data()[4 + 5*i] = 2;
         i = 2;
-        rois->mutable_cpu_data()[0 + 5*i] = 1;
-        rois->mutable_cpu_data()[1 + 5*i] = 0; // x1 < 5
-        rois->mutable_cpu_data()[2 + 5*i] = 2; // y1 < 4
-        rois->mutable_cpu_data()[3 + 5*i] = 1; // x2 < 5
-        rois->mutable_cpu_data()[4 + 5*i] = 3; // y2 < 4
+        rois->mutable_cpu_data()[0 + 5*i] = 0;
+        rois->mutable_cpu_data()[1 + 5*i] = 0;
+        rois->mutable_cpu_data()[2 + 5*i] = 1;
+        rois->mutable_cpu_data()[3 + 5*i] = 2;
+        rois->mutable_cpu_data()[4 + 5*i] = 3;
         i = 3;
         rois->mutable_cpu_data()[0 + 5*i] = 0;
-        rois->mutable_cpu_data()[1 + 5*i] = 3; // x1 < 5
-        rois->mutable_cpu_data()[2 + 5*i] = 2; // y1 < 4
-        rois->mutable_cpu_data()[3 + 5*i] = 4; // x2 < 5
-        rois->mutable_cpu_data()[4 + 5*i] = 3; // y2 < 4
+        rois->mutable_cpu_data()[1 + 5*i] = 2;
+        rois->mutable_cpu_data()[2 + 5*i] = 1;
+        rois->mutable_cpu_data()[3 + 5*i] = 4;
+        rois->mutable_cpu_data()[4 + 5*i] = 3;
         bottom.push_back(rois);
 
         // Create layer
-        ROIPoolingLayer<Dtype> layer(layer_param);
+        ROIPoolingLayer<Dtype,Mtype> layer(layer_param);
         layer.SetUp(bottom,top);
 
         // Run forward pass
