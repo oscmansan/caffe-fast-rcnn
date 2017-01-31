@@ -15,7 +15,7 @@ namespace caffe {
  * @brief Rectified Linear Unit non-linearity @f$ y = \max(0, x) @f$.
  *        The simple max is fast to compute, and the function does not saturate.
  */
-template <typename Dtype, typename Mtype>
+template <typename Dtype, typename Mtype = Dtype>
 class ReLULayer : public NeuronLayer<Dtype,Mtype> {
  public:
   /**

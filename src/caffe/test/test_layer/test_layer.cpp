@@ -17,6 +17,7 @@ using namespace std;
 #include "caffe/layers/softmax_layer.hpp"
 #include "caffe/layers/reshape_layer.hpp"
 #include "caffe/fast_rcnn_layers.hpp"
+#include "caffe/layer_factory.hpp"
 #include "caffe/util/get.hpp"
 
 #ifdef USE_CUDNN
@@ -480,6 +481,26 @@ public:
         cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
+    void PythonLayerTest() {
+        cout << "## Testing PythonLayer ################" << endl;
+
+        // Fill bottom blob
+        init_rand(bottom_blob);
+        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
+        clog << to_string(bottom_blob) << endl;
+
+        // Set up layer parameters
+        LayerParameter layer_param;
+        layer_param.set_type("python");
+        PythonParameter* python_param = layer_param.mutable_python_param();
+        python_param->set_module("rpn.proposal_layer");
+        python_param->set_layer("ProposalLayer");
+        //python_param->set_param_str("'feat_stride': 16");
+
+        // Create layer
+        Layer<Dtype,Mtype>* layer = LayerRegistry<Dtype,Mtype>::CreateLayer(layer_param).get();
+    }
+
 private:
     int num = 2;
     int channels = 3;
@@ -572,5 +593,6 @@ int main() {
     //test.ReLULayerTest();
     //test.SoftmaxLayerTest();
     //test.ReshapeLayerTest();
-    test.ROIPoolingLayerTest();
+    //test.ROIPoolingLayerTest();
+    test.PythonLayerTest();
 }

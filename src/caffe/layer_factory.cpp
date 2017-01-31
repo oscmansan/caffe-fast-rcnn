@@ -110,8 +110,8 @@ shared_ptr<Layer<Dtype,Mtype> > GetPoolingLayer(const LayerParameter& param) {
 REGISTER_LAYER_CREATOR(Pooling, GetPoolingLayer);
 
 // Get LRN layer according to engine
-template <typename Dtype, typename Mtype>
-shared_ptr<Layer<Dtype,Mtype> > GetLRNLayer(const LayerParameter& param) {
+/*template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetLRNLayer(const LayerParameter& param) {
   LRNParameter_Engine engine = param.lrn_param().engine();
 
   if (engine == LRNParameter_Engine_DEFAULT) {
@@ -123,19 +123,19 @@ shared_ptr<Layer<Dtype,Mtype> > GetLRNLayer(const LayerParameter& param) {
   }
 
   if (engine == LRNParameter_Engine_CAFFE) {
-    return shared_ptr<Layer<Dtype,Mtype> >(new LRNLayer<Dtype,Mtype>(param));
+    return shared_ptr<Layer<Dtype> >(new LRNLayer<Dtype>(param));
 #ifdef USE_CUDNN
   } else if (engine == LRNParameter_Engine_CUDNN) {
     LRNParameter lrn_param = param.lrn_param();
 
     if (lrn_param.norm_region() ==LRNParameter_NormRegion_WITHIN_CHANNEL) {
-      return shared_ptr<Layer<Dtype,Mtype> >(new CuDNNLCNLayer<Dtype,Mtype>(param));
+      return shared_ptr<Layer<Dtype> >(new CuDNNLCNLayer<Dtype>(param));
     } else {
       // local size is too big to be handled through cuDNN
       if (param.lrn_param().local_size() > CUDNN_LRN_MAX_N) {
-        return shared_ptr<Layer<Dtype,Mtype> >(new LRNLayer<Dtype,Mtype>(param));
+        return shared_ptr<Layer<Dtype> >(new LRNLayer<Dtype>(param));
       } else {
-        return shared_ptr<Layer<Dtype,Mtype> >(new CuDNNLRNLayer<Dtype,Mtype>(param));
+        return shared_ptr<Layer<Dtype> >(new CuDNNLRNLayer<Dtype>(param));
       }
     }
 #endif
@@ -144,7 +144,7 @@ shared_ptr<Layer<Dtype,Mtype> > GetLRNLayer(const LayerParameter& param) {
   }
 }
 
-REGISTER_LAYER_CREATOR(LRN, GetLRNLayer);
+REGISTER_LAYER_CREATOR(LRN, GetLRNLayer);*/
 
 // Get relu layer according to engine.
 template <typename Dtype, typename Mtype>
@@ -170,8 +170,8 @@ shared_ptr<Layer<Dtype,Mtype> > GetReLULayer(const LayerParameter& param) {
 REGISTER_LAYER_CREATOR(ReLU, GetReLULayer);
 
 // Get sigmoid layer according to engine.
-template <typename Dtype, typename Mtype>
-shared_ptr<Layer<Dtype,Mtype> > GetSigmoidLayer(const LayerParameter& param) {
+/*template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetSigmoidLayer(const LayerParameter& param) {
   SigmoidParameter_Engine engine = param.sigmoid_param().engine();
   if (engine == SigmoidParameter_Engine_DEFAULT) {
     engine = SigmoidParameter_Engine_CAFFE;
@@ -180,17 +180,17 @@ shared_ptr<Layer<Dtype,Mtype> > GetSigmoidLayer(const LayerParameter& param) {
 #endif
   }
   if (engine == SigmoidParameter_Engine_CAFFE) {
-    return shared_ptr<Layer<Dtype,Mtype> >(new SigmoidLayer<Dtype,Mtype>(param));
+    return shared_ptr<Layer<Dtype> >(new SigmoidLayer<Dtype>(param));
 #ifdef USE_CUDNN
   } else if (engine == SigmoidParameter_Engine_CUDNN) {
-    return shared_ptr<Layer<Dtype,Mtype> >(new CuDNNSigmoidLayer<Dtype,Mtype>(param));
+    return shared_ptr<Layer<Dtype> >(new CuDNNSigmoidLayer<Dtype>(param));
 #endif
   } else {
     LOG(FATAL) << "Layer " << param.name() << " has unknown engine.";
   }
 }
 
-REGISTER_LAYER_CREATOR(Sigmoid, GetSigmoidLayer);
+REGISTER_LAYER_CREATOR(Sigmoid, GetSigmoidLayer);*/
 
 // Get softmax layer according to engine.
 template <typename Dtype, typename Mtype>
@@ -216,8 +216,8 @@ shared_ptr<Layer<Dtype,Mtype> > GetSoftmaxLayer(const LayerParameter& param) {
 REGISTER_LAYER_CREATOR(Softmax, GetSoftmaxLayer);
 
 // Get tanh layer according to engine.
-template <typename Dtype, typename Mtype>
-shared_ptr<Layer<Dtype,Mtype> > GetTanHLayer(const LayerParameter& param) {
+/*template <typename Dtype>
+shared_ptr<Layer<Dtype> > GetTanHLayer(const LayerParameter& param) {
   TanHParameter_Engine engine = param.tanh_param().engine();
   if (engine == TanHParameter_Engine_DEFAULT) {
     engine = TanHParameter_Engine_CAFFE;
@@ -226,17 +226,17 @@ shared_ptr<Layer<Dtype,Mtype> > GetTanHLayer(const LayerParameter& param) {
 #endif
   }
   if (engine == TanHParameter_Engine_CAFFE) {
-    return shared_ptr<Layer<Dtype,Mtype> >(new TanHLayer<Dtype,Mtype>(param));
+    return shared_ptr<Layer<Dtype> >(new TanHLayer<Dtype>(param));
 #ifdef USE_CUDNN
   } else if (engine == TanHParameter_Engine_CUDNN) {
-    return shared_ptr<Layer<Dtype,Mtype> >(new CuDNNTanHLayer<Dtype,Mtype>(param));
+    return shared_ptr<Layer<Dtype> >(new CuDNNTanHLayer<Dtype>(param));
 #endif
   } else {
     LOG(FATAL) << "Layer " << param.name() << " has unknown engine.";
   }
 }
 
-REGISTER_LAYER_CREATOR(TanH, GetTanHLayer);
+REGISTER_LAYER_CREATOR(TanH, GetTanHLayer);*/
 
 #ifdef WITH_PYTHON_LAYER
 template <typename Dtype, typename Mtype>

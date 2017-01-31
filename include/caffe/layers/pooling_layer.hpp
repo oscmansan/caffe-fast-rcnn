@@ -14,7 +14,7 @@ namespace caffe {
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
-template <typename Dtype, typename Mtype>
+template <typename Dtype, typename Mtype = Dtype>
 class PoolingLayer : public Layer<Dtype,Mtype> {
  public:
   explicit PoolingLayer(const LayerParameter& param)

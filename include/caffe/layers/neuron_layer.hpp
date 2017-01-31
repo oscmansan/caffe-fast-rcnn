@@ -15,7 +15,7 @@ namespace caffe {
  *        each element of the output depends only on the corresponding input
  *        element.
  */
-template <typename Dtype, typename Mtype>
+template <typename Dtype, typename Mtype = Dtype>
 class NeuronLayer : public Layer<Dtype,Mtype> {
  public:
   explicit NeuronLayer(const LayerParameter& param)
