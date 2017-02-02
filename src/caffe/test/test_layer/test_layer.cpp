@@ -16,6 +16,7 @@ using namespace std;
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
 #include "caffe/layers/reshape_layer.hpp"
+//#include "caffe/layers/python_layer.hpp"
 #include "caffe/fast_rcnn_layers.hpp"
 #include "caffe/layer_factory.hpp"
 #include "caffe/util/get.hpp"

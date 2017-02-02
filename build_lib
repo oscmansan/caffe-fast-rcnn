@@ -1,7 +1,5 @@
 PROJECT := caffe
 
-USE_CUDNN := 1
-
 BUILD_DIR := build
 BUILD_INCLUDE_DIR := $(BUILD_DIR)/src
 CUDA_DIR := /usr/local/cuda
@@ -41,11 +39,14 @@ OBJS := $(PROTO_OBJS) $(CXX_OBJS) $(CU_OBJS)
 THIRDPARTY_DIR=$(PROJECT_DIR)/3rdparty
 INCLUDE_DIRS += $(BUILD_INCLUDE_DIR) src include $(THIRDPARTY_DIR)
 CUDA_INCLUDE_DIR := $(CUDA_DIR)/include
+PYTHON_INCLUDE := /usr/include/python2.7 /usr/lib/python2.7/dist-packages/numpy/core/include
 INCLUDE_DIRS += $(CUDA_INCLUDE_DIR)
 INCLUDE_DIRS += ${CNMEM_DIR}/include
+INCLUDE_DIRS += $(PYTHON_INCLUDE)
 COMMON_FLAGS += $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir))
 COMMON_FLAGS += -DUSE_CUDNN
 COMMON_FLAGS += -DUSE_OPENCV
+COMMON_FLAGS += -DWITH_PYTHON_LAYER
 WARNINGS := -Wall -Wno-sign-compare
 WARNINGS += -Wno-uninitialized
 LINKFLAGS += -pthread -fPIC $(COMMON_FLAGS) $(WARNINGS)
@@ -60,6 +61,7 @@ LIBRARIES += opencv_core opencv_highgui opencv_imgproc
 LIBRARIES += boost_thread stdc++
 LIBRARIES += cudnn
 LIBRARIES += cblas atlas
+LIBRARIES += boost_python boost_thread python2.7
 LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
             $(foreach library,$(LIBRARIES),-l$(library))
 
@@ -85,11 +87,15 @@ CXX_INNER_PRODUCT_LAYER := build/src/caffe/layers/inner_product_layer.o
 CU_INNER_PRODUCT_LAYER := build/cuda/src/caffe/layers/inner_product_layer.o
 CXX_POOLING_LAYER := build/src/caffe/layers/pooling_layer.o
 CU_POOLING_LAYER := build/cuda/src/caffe/layers/pooling_layer.o
+CXX_CUDNN_POOLING_LAYER := build/src/caffe/layers/cudnn_pooling_layer.o
+CU_CUDNN_POOLING_LAYER := build/cuda/src/caffe/layers/cudnn_pooling_layer.o
 CXX_SPLIT_LAYER := build/src/caffe/layers/split_layer.o
 CU_SPLIT_LAYER := build/cuda/src/caffe/layers/split_layer.o
 NEURON_LAYER := build/src/caffe/layers/neuron_layer.o
 CXX_RELU_LAYER := build/src/caffe/layers/relu_layer.o
 CU_RELU_LAYER := build/cuda/src/caffe/layers/relu_layer.o
+CXX_CUDNN_RELU_LAYER := build/src/caffe/layers/cudnn_relu_layer.o
+CU_CUDNN_RELU_LAYER := build/cuda/src/caffe/layers/cudnn_relu_layer.o
 CXX_SOFTMAX_LAYER := build/src/caffe/layers/softmax_layer.o
 CU_SOFTMAX_LAYER := build/cuda/src/caffe/layers/softmax_layer.o
 CXX_CUDNN_SOFTMAX_LAYER := build/src/caffe/layers/cudnn_softmax_layer.o
@@ -184,6 +190,14 @@ $(CU_POOLING_LAYER): src/caffe/layers/pooling_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
+$(CXX_CUDNN_POOLING_LAYER): src/caffe/layers/cudnn_pooling_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_CUDNN_POOLING_LAYER): src/caffe/layers/cudnn_pooling_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
 $(CXX_SPLIT_LAYER): src/caffe/layers/split_layer.cpp
 	@ echo CXX $<
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
@@ -201,6 +215,14 @@ $(CXX_RELU_LAYER): src/caffe/layers/relu_layer.cpp
 	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
 $(CU_RELU_LAYER): src/caffe/layers/relu_layer.cu
+	@ echo NVCC $<
+	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
+
+$(CXX_CUDNN_RELU_LAYER): src/caffe/layers/cudnn_relu_layer.cpp
+	@ echo CXX $<
+	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+
+$(CU_CUDNN_RELU_LAYER): src/caffe/layers/cudnn_relu_layer.cu
 	@ echo NVCC $<
 	@ $(CUDA_DIR)/bin/nvcc $(NVCCFLAGS) $(CUDA_ARCH) -c $< -o $@
 
@@ -234,7 +256,7 @@ $(CU_ROI_POOLING_LAYER): src/caffe/layers/roi_pooling_layer.cu
 
 $(LAYER_FACTORY): src/caffe/layer_factory.cpp
 	@ echo CXX $<
-	@ g++ $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
+	@ g++ -D WITH_PYTHON_LAYER $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS) $(DYNAMIC_FLAGS) -c $< -o $@
 
 $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ echo LD -o $@
@@ -242,4 +264,4 @@ $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ cd $(BUILD_DIR)/lib; rm -f $(DYNAMIC_NAME_SHORT); ln -s $(DYNAMIC_VERSIONED_NAME_SHORT) $(DYNAMIC_NAME_SHORT)
 
 clean:
-	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(CXX_IM2COL) $(CU_IM2COL) $(FLOAT16) $(COMMON) $(BLOB) $(LAYER) $(BASE_CONV_LAYER) $(CXX_CONV_LAYER) $(CU_CONV_LAYER) $(CXX_CUDNN_CONV_LAYER) $(CU_CUDNN_CONV_LAYER) $(CXX_INNER_PRODUCT_LAYER) $(CU_INNER_PRODUCT_LAYER)
+	rm $(PROTO_OBJS) $(FP16_CONVERSION) $(MATH_FUNCTIONS) $(CXX_IM2COL) $(CU_IM2COL) $(FLOAT16) $(COMMON) $(BLOB) $(LAYER) $(BASE_CONV_LAYER) $(CXX_CONV_LAYER) $(CU_CONV_LAYER) $(CXX_CUDNN_CONV_LAYER) $(CU_CUDNN_CONV_LAYER) $(CXX_INNER_PRODUCT_LAYER) $(CU_INNER_PRODUCT_LAYER) $(CXX_POOLING_LAYER) $(CU_POOLING_LAYER) $(CXX_CUDNN_POOLING_LAYER) $(CU_CUDNN_POOLING_LAYER) $(CXX_SPLIT_LAYER) $(CU_SPLIT_LAYER) $(NEURON_LAYER) $(CXX_RELU_LAYER) $(CU_RELU_LAYER) $(CXX_CUDNN_RELU_LAYER) $(CU_CUDNN_RELU_LAYER) $(CXX_SOFTMAX_LAYER) $(CU_SOFTMAX_LAYER) $(CXX_CUDNN_SOFTMAX_LAYER) $(CU_CUDNN_SOFTMAX_LAYER) $(CXX_RESHAPE_LAYER) $(CXX_ROI_POOLING_LAYER) $(CU_ROI_POOLING_LAYER) $(LAYER_FACTORY) 
