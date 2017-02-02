@@ -16,22 +16,22 @@ namespace caffe {
 /**
  * @brief CuDNN acceleration of ReLULayer.
  */
-template <typename Dtype>
-class CuDNNReLULayer : public ReLULayer<Dtype> {
+template <typename Dtype, typename Mtype>
+class CuDNNReLULayer : public ReLULayer<Dtype,Mtype> {
  public:
   explicit CuDNNReLULayer(const LayerParameter& param)
-      : ReLULayer<Dtype>(param), handles_setup_(false) {}
-  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
+      : ReLULayer<Dtype,Mtype>(param), handles_setup_(false) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
   virtual ~CuDNNReLULayer();
 
  protected:
-  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);
-  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+  virtual void Forward_gpu(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top);
+  virtual void Backward_gpu(const vector<Blob<Dtype,Mtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype,Mtype>*>& bottom);
 
   bool handles_setup_;
   cudnnHandle_t             handle_;
