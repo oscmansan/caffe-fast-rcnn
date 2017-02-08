@@ -2,6 +2,7 @@
 // to avoid _POSIX_C_SOURCE redefinition
 #ifdef WITH_PYTHON_LAYER
 #include <boost/python.hpp>
+#include <boost/filesystem.hpp>
 #endif
 #include <string>
 
@@ -242,6 +243,13 @@ REGISTER_LAYER_CREATOR(TanH, GetTanHLayer);*/
 template <typename Dtype, typename Mtype>
 shared_ptr<Layer<Dtype,Mtype> > GetPythonLayer(const LayerParameter& param) {
   Py_Initialize();
+
+  PyRun_SimpleString(
+          "import sys\n"
+          "sys.path.append('/home/oscar/py-faster-rcnn-fp16/caffe-fast-rcnn/python')\n"
+          "sys.path.append('/home/oscar/py-faster-rcnn-fp16/lib')\n"
+  );
+
   try {
     bp::object module = bp::import(param.python_param().module().c_str());
     bp::object layer = module.attr(param.python_param().layer().c_str())(param);

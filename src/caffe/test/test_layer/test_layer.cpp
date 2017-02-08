@@ -16,7 +16,7 @@ using namespace std;
 #include "caffe/layers/relu_layer.hpp"
 #include "caffe/layers/softmax_layer.hpp"
 #include "caffe/layers/reshape_layer.hpp"
-//#include "caffe/layers/python_layer.hpp"
+#include "caffe/layers/python_layer.hpp"
 #include "caffe/fast_rcnn_layers.hpp"
 #include "caffe/layer_factory.hpp"
 #include "caffe/util/get.hpp"
@@ -492,14 +492,14 @@ public:
 
         // Set up layer parameters
         LayerParameter layer_param;
-        layer_param.set_type("python");
+        layer_param.set_type("Python");
         PythonParameter* python_param = layer_param.mutable_python_param();
         python_param->set_module("rpn.proposal_layer");
         python_param->set_layer("ProposalLayer");
         //python_param->set_param_str("'feat_stride': 16");
 
         // Create layer
-        Layer<Dtype,Mtype>* layer = LayerRegistry<Dtype,Mtype>::CreateLayer(layer_param).get();
+        /*Layer<Dtype,Mtype>* layer = */LayerRegistry<Dtype,Mtype>::CreateLayer(layer_param).get();
     }
 
 private:

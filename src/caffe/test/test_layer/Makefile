@@ -6,7 +6,6 @@ THIRDPARTY_DIR=$(PROJECT_DIR)/3rdparty
 INCLUDE_DIRS += $(BUILD_INCLUDE_DIR) ../../../../src ../../../../include $(THIRDPARTY_DIR)
 CUDA_INCLUDE_DIR := $(CUDA_DIR)/include
 INCLUDE_DIRS += $(CUDA_INCLUDE_DIR)
-INCLUDE_DIRS += ${CNMEM_DIR}/include
 COMMON_FLAGS += $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir))
 COMMON_FLAGS += -DUSE_CUDNN
 COMMON_FLAGS += -DUSE_OPENCV
@@ -27,6 +26,7 @@ LIBRARIES += opencv_core opencv_highgui opencv_imgproc
 LIBRARIES += boost_thread stdc++
 LIBRARIES += cudnn
 LIBRARIES += cblas atlas
+LIBRARIES += boost_python python2.7 boost_filesystem
 LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
 		$(foreach library,$(LIBRARIES),-l$(library))
 
@@ -75,7 +75,7 @@ ORIGIN := \$$ORIGIN
 all: test_layer.bin
 
 test_layer.bin: test_layer.cpp
-	@ echo CXX/LD -o $@
+	@ echo CXX/LD -o $
 	@ g++ -std=c++11 -g $< -o $@ $(OBJS) $(LINKFLAGS) $(LDFLAGS) -Wl,-rpath,$(ORIGIN)/../../lib
 
 clean:
