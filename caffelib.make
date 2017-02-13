@@ -65,7 +65,13 @@ LIBRARIES += cblas atlas
 LDFLAGS += $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(PKG_CONFIG) \
             $(foreach library,$(LIBRARIES),-l$(library))
 
+PYTHON_LIBRARIES ?= boost_python python2.7
+PYTHON_LDFLAGS := $(LDFLAGS) $(foreach library,$(PYTHON_LIBRARIES),-l$(library))
+
 NVCCFLAGS += -ccbin=g++ -Xcompiler -fPIC $(COMMON_FLAGS)
+
+ORIGIN := $(CURDIR)
+
 
 # PY$(PROJECT)_SRC is the python wrapper for $(PROJECT)
 PY$(PROJECT)_SRC := python/$(PROJECT)/_$(PROJECT)_layer.cpp
@@ -283,8 +289,7 @@ $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 $(PY$(PROJECT)_SO): $(PY$(PROJECT)_SRC) $(PY$(PROJECT)_HXX)
 	@ echo CXX/LD -o $@ $<
 	@ g++ -shared -o $@ $(PY$(PROJECT)_SRC) \
-	    -o $@ $(LINKFLAGS) $(LDFLAGS) $(PYTHON_LDFLAGS) \
-		-Wl,-rpath,$(ORIGIN)/../../build/lib
+	    -o $@ $(LINKFLAGS) $(PYTHON_LDFLAGS) -l$(LIBRARY_NAME)
 
 
 clean:
