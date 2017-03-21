@@ -490,16 +490,42 @@ public:
         cout << "I: " << to_string(bottom_blob->shape()) << endl; 
         clog << to_string(bottom_blob) << endl;
 
+        vector<Blob<float,float>*> bottom2;
+        Blob<float,float>* bottom_blob2 = new Blob<float,float>();
+        vector<int> shape {1,channels,height,width};
+        bottom_blob2->Reshape(shape);
+        Dtype* data = bottom_blob->mutable_cpu_data();
+        float* data2 = bottom_blob2->mutable_cpu_data();
+        for (int i = 0; i < bottom_blob->count(); ++i) {
+            data2[i] = Get<float>(data[i]);
+        }
+        bottom2.push_back(bottom_blob2);
+        bottom2.push_back(bottom_blob2);
+        bottom2.push_back(bottom_blob2);
+
+        vector<Blob<float,float>*> top2;
+        Blob<float,float>* top_blob2_1 = new Blob<float,float>();
+        Blob<float,float>* top_blob2_2 = new Blob<float,float>();
+        top2.push_back(top_blob2_1);
+        top2.push_back(top_blob2_2);
+
         // Set up layer parameters
         LayerParameter layer_param;
         layer_param.set_type("Python");
         PythonParameter* python_param = layer_param.mutable_python_param();
         python_param->set_module("rpn.proposal_layer");
         python_param->set_layer("ProposalLayer");
-        //python_param->set_param_str("'feat_stride': 16");
+        python_param->set_param_str("'feat_stride': 16");
 
         // Create layer
-        /*Layer<Dtype,Mtype>* layer = */LayerRegistry<Dtype,Mtype>::CreateLayer(layer_param).get();
+        Layer<float,float>* layer = LayerRegistry<float,float>::CreateLayer(layer_param).get();
+        try {
+            layer->SetUp(bottom2,top2);
+            layer->Forward(bottom2,top2);
+        } 
+        catch(bp::error_already_set) {
+            PyErr_Print();
+        }
     }
 
 private:

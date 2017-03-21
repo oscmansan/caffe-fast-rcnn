@@ -138,7 +138,7 @@ bp::object BlobVec_add_blob(bp::tuple args, bp::dict kwargs) {
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(SolveOverloads, Solve, 0, 1);
 
-BOOST_PYTHON_MODULE(_caffe) {
+BOOST_PYTHON_MODULE(_caffe_layer) {
   // below, we prepend an underscore to methods that will be replaced
   // in Python
 

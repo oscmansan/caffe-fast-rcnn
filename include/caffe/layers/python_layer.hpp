@@ -44,6 +44,12 @@ class PythonLayer : public Layer<Dtype,Mtype> {
       const vector<Blob<Dtype,Mtype>*>& top) {
     self_.attr("forward")(bottom, top);
   }
+
+  virtual void Forward_gpu(const vector<Blob<Dtype,Mtype>*>& bottom,
+      const vector<Blob<Dtype,Mtype>*>& top) {
+      Forward_cpu(bottom,top);
+  }
+
   virtual void Backward_cpu(const vector<Blob<Dtype,Mtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype,Mtype>*>& bottom) {
     self_.attr("backward")(top, propagate_down, bottom);
