@@ -485,29 +485,21 @@ public:
     void PythonLayerTest() {
         cout << "## Testing PythonLayer ################" << endl;
 
-        // Fill bottom blob
-        init_rand(bottom_blob);
-        cout << "I: " << to_string(bottom_blob->shape()) << endl; 
-        clog << to_string(bottom_blob) << endl;
+        int H = 14;  // height locations
+        int W = 14;  // width locations
+        int A = 9;   // anchors
 
-        vector<Blob<float,float>*> bottom2;
-        Blob<float,float>* bottom_blob2 = new Blob<float,float>();
-        vector<int> shape {1,channels,height,width};
-        bottom_blob2->Reshape(shape);
-        Dtype* data = bottom_blob->mutable_cpu_data();
-        float* data2 = bottom_blob2->mutable_cpu_data();
-        for (int i = 0; i < bottom_blob->count(); ++i) {
-            data2[i] = Get<float>(data[i]);
-        }
-        bottom2.push_back(bottom_blob2);
-        bottom2.push_back(bottom_blob2);
-        bottom2.push_back(bottom_blob2);
+        vector<Blob<Dtype,Mtype>*> bottom2;
+        Blob<Dtype,Mtype>* scores = new Blob<Dtype,Mtype>(1,2*A,H,W);
+        Blob<Dtype,Mtype>* bbox_deltas = new Blob<Dtype,Mtype>(1,4*A,H,W);
+        Blob<Dtype,Mtype>* im_info = new Blob<Dtype,Mtype>(1,3,1,1);
+        bottom2.push_back(scores);
+        bottom2.push_back(bbox_deltas);
+        bottom2.push_back(im_info);
 
-        vector<Blob<float,float>*> top2;
-        Blob<float,float>* top_blob2_1 = new Blob<float,float>();
-        Blob<float,float>* top_blob2_2 = new Blob<float,float>();
-        top2.push_back(top_blob2_1);
-        top2.push_back(top_blob2_2);
+        vector<Blob<Dtype,Mtype>*> top2;
+        Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>();
+        top2.push_back(rois);
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -518,7 +510,7 @@ public:
         python_param->set_param_str("'feat_stride': 16");
 
         // Create layer
-        Layer<float,float>* layer = LayerRegistry<float,float>::CreateLayer(layer_param).get();
+        PythonLayer<float,float>* layer = (PythonLayer<float,float>*) LayerRegistry<float,float>::CreateLayer(layer_param).get();
         try {
             layer->SetUp(bottom2,top2);
             layer->Forward(bottom2,top2);

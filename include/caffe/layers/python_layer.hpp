@@ -38,6 +38,42 @@ class PythonLayer : public Layer<Dtype,Mtype> {
   }
 
   virtual inline const char* type() const { return "Python"; }
+  
+  void SetUp(const vector<Blob<float16,float16>*>& bottom,
+      const vector<Blob<float16,float16>*>& top) {
+      printf("LayerSetUp\n");
+
+      vector<Blob<Dtype,Mtype>*> bottom2;
+      vector<Blob<Dtype,Mtype>*> top2;
+
+      // float16 -> Dtype conversion
+      for (int i = 0; i < bottom.size(); ++i) {
+          Blob<float16,float16>* blob = bottom[i];
+          Blob<Dtype,Mtype>* blob2 = new Blob<Dtype,Mtype>(bottom[i]->shape());
+          float16* data = blob->mutable_cpu_data();
+          Dtype* data2 = blob2->mutable_cpu_data();
+          for (int j = 0; j < blob->count(); ++j) {
+              data2[j] = Get<Dtype>(data[j]);
+          }
+          bottom2.push_back(blob2);
+      }
+      for (int i = 0; i < top.size(); ++i) {
+          top2.push_back(new Blob<Dtype,Mtype>());
+      }
+
+      this->LayerSetUp(bottom2,top2);
+
+      // Dtype -> float16 conversion
+      for (int i = 0; i < top2.size(); ++i) {
+          Blob<float16,float16>* blob = bottom[i];
+          Blob<Dtype,Mtype>* blob2 = bottom2[i];
+      }
+  }
+  
+  void Forward(const vector<Blob<float16,float16>*>& bottom,
+          const vector<Blob<float16,float16>*>& top) {
+      printf("Forward\n");
+  }
 
  protected:
   virtual void Forward_cpu(const vector<Blob<Dtype,Mtype>*>& bottom,
