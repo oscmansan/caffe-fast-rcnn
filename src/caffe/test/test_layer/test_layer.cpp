@@ -497,9 +497,19 @@ public:
         bottom2.push_back(bbox_deltas);
         bottom2.push_back(im_info);
 
+        init_rand(scores);
+        init_rand(bbox_deltas);
+        im_info->mutable_cpu_data()[0] = 500;
+        im_info->mutable_cpu_data()[1] = 500;
+        im_info->mutable_cpu_data()[2] = 1;
+        cout << "im_info: " << to_string(im_info) << endl;
+
+
         vector<Blob<Dtype,Mtype>*> top2;
         Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>();
+        Blob<Dtype,Mtype>* scores2 = new Blob<Dtype,Mtype>();
         top2.push_back(rois);
+        top2.push_back(scores2);
 
         // Set up layer parameters
         LayerParameter layer_param;
@@ -518,6 +528,9 @@ public:
         catch(bp::error_already_set) {
             PyErr_Print();
         }
+
+        cout << "O: " << to_string(rois) << endl;
+        cout << "O: " << to_string(scores2) << endl;
     }
 
 private:
