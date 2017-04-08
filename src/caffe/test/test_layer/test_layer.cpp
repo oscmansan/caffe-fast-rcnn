@@ -27,6 +27,11 @@ using namespace std;
 #endif
 using namespace caffe;
 
+#include "boost/property_tree/ptree.hpp"
+#include "boost/property_tree/json_parser.hpp"
+#include <boost/foreach.hpp>
+using boost::property_tree::ptree;
+
 #define Dtype float16
 #define Mtype float16
 
@@ -497,13 +502,24 @@ public:
         bottom2.push_back(bbox_deltas);
         bottom2.push_back(im_info);
 
-        init_rand(scores);
-        init_rand(bbox_deltas);
-        im_info->mutable_cpu_data()[0] = 500;
-        im_info->mutable_cpu_data()[1] = 500;
-        im_info->mutable_cpu_data()[2] = 1;
-        cout << "im_info: " << to_string(im_info) << endl;
+        ifstream jsonFile("/home/oscar/bottom");
+        ptree pt;
+        read_json(jsonFile, pt);
+        int i = 0;
+        BOOST_FOREACH (ptree::value_type const& item, pt) {
+            vector<float> vector_data = parse_blob<float>(item.second);
+            Dtype* blob_data = bottom2[i]->mutable_cpu_data();
+            for (int j = 0; j < vector_data.size(); ++j) {
+                blob_data[j] = Get<Dtype>(vector_data[j]);
+            }
+            ++i;
+        }
 
+        //init_rand(scores);
+        //init_rand(bbox_deltas);
+        //im_info->mutable_cpu_data()[0] = 500;
+        //im_info->mutable_cpu_data()[1] = 500;
+        //im_info->mutable_cpu_data()[2] = 1;
 
         vector<Blob<Dtype,Mtype>*> top2;
         Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>();
@@ -612,6 +628,24 @@ private:
             temp.tv_nsec = end.tv_nsec-start.tv_nsec;
        }
        return temp;
+    }
+
+    template <typename T>
+    vector<T> parse_blob(ptree const& pt)
+    {
+        vector<T> data;
+        BOOST_FOREACH (ptree::value_type const& item, pt) {
+            try {
+                data.push_back(item.second.get_value<T>());
+            }
+            catch(exception const& e) {
+                vector<T> data2 = parse_blob<T>(item.second);
+                BOOST_FOREACH (T x, data2) {
+                    data.push_back(x);
+                }
+            }
+        }
+        return data;
     }
 };
 
