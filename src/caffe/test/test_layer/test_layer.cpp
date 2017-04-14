@@ -490,6 +490,7 @@ public:
     void PythonLayerTest() {
         cout << "## Testing PythonLayer ################" << endl;
 
+        // Create bottom blob
         int H = 38;  // height locations
         int W = 50;  // width locations
         int A = 9;   // anchors
@@ -505,6 +506,7 @@ public:
         bottom2.push_back(bbox_deltas);
         bottom2.push_back(im_info);
 
+        // Fill bottom blob
         ifstream jsonFile("/home/oscar/bottom");
         ptree pt;
         read_json(jsonFile, pt);
@@ -519,6 +521,7 @@ public:
             ++i;
         }
 
+        // Create top blob
         vector<Blob<Dtype,Mtype>*> top2;
         Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>();
         Blob<Dtype,Mtype>* scores2 = new Blob<Dtype,Mtype>();
@@ -536,16 +539,25 @@ public:
 
         // Create layer
         PythonLayer<float,float>* layer = (PythonLayer<float,float>*) LayerRegistry<float,float>::CreateLayer(layer_param).get();
+
+        // Run forward pass
+        timespec start,end,elapsed;
         try {
             layer->SetUp(bottom2,top2);
+            clock_gettime(CLOCK_REALTIME,&start);
             layer->Forward(bottom2,top2);
+            clock_gettime(CLOCK_REALTIME,&end);
         } 
         catch(bp::error_already_set) {
             PyErr_Print();
         }
 
-        cout << "O: " << to_string(rois) << endl;
-        cout << "O: " << to_string(scores2) << endl;
+        cout << "O: " << to_string(rois->shape()) << endl;
+        cout << "O: " << to_string(scores2->shape()) << endl;
+        clog << to_string(rois) << endl;
+        clog << to_string(scores2) << endl;
+        elapsed = diff(start,end);
+        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
     }
 
 private:
