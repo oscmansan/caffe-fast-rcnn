@@ -490,14 +490,17 @@ public:
     void PythonLayerTest() {
         cout << "## Testing PythonLayer ################" << endl;
 
-        int H = 14;  // height locations
-        int W = 14;  // width locations
+        int H = 38;  // height locations
+        int W = 50;  // width locations
         int A = 9;   // anchors
+
+        int shape[] = {1, 3};
+        vector<int> im_info_shape(shape, shape+2);
 
         vector<Blob<Dtype,Mtype>*> bottom2;
         Blob<Dtype,Mtype>* scores = new Blob<Dtype,Mtype>(1,2*A,H,W);
         Blob<Dtype,Mtype>* bbox_deltas = new Blob<Dtype,Mtype>(1,4*A,H,W);
-        Blob<Dtype,Mtype>* im_info = new Blob<Dtype,Mtype>(1,3,1,1);
+        Blob<Dtype,Mtype>* im_info = new Blob<Dtype,Mtype>(im_info_shape);
         bottom2.push_back(scores);
         bottom2.push_back(bbox_deltas);
         bottom2.push_back(im_info);
@@ -509,17 +512,12 @@ public:
         BOOST_FOREACH (ptree::value_type const& item, pt) {
             vector<float> vector_data = parse_blob<float>(item.second);
             Dtype* blob_data = bottom2[i]->mutable_cpu_data();
+            assert(vector_data.size() == bottom2[i]->count());
             for (int j = 0; j < vector_data.size(); ++j) {
                 blob_data[j] = Get<Dtype>(vector_data[j]);
             }
             ++i;
         }
-
-        //init_rand(scores);
-        //init_rand(bbox_deltas);
-        //im_info->mutable_cpu_data()[0] = 500;
-        //im_info->mutable_cpu_data()[1] = 500;
-        //im_info->mutable_cpu_data()[2] = 1;
 
         vector<Blob<Dtype,Mtype>*> top2;
         Blob<Dtype,Mtype>* rois = new Blob<Dtype,Mtype>();
@@ -529,6 +527,7 @@ public:
 
         // Set up layer parameters
         LayerParameter layer_param;
+        layer_param.set_phase(TEST);
         layer_param.set_type("Python");
         PythonParameter* python_param = layer_param.mutable_python_param();
         python_param->set_module("rpn.proposal_layer");
