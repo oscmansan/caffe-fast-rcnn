@@ -47,13 +47,13 @@
 
 namespace caffe {
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 class Solver;
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 class SolverRegistry {
  public:
-  typedef Solver<Dtype>* (*Creator)(const SolverParameter&);
+  typedef Solver<Dtype,Mtype>* (*Creator)(const SolverParameter&);
   typedef std::map<string, Creator> CreatorRegistry;
 
   static CreatorRegistry& Registry() {
@@ -70,7 +70,7 @@ class SolverRegistry {
   }
 
   // Get a solver using a SolverParameter.
-  static Solver<Dtype>* CreateSolver(const SolverParameter& param) {
+  static Solver<Dtype,Mtype>* CreateSolver(const SolverParameter& param) {
     const string& type = param.type();
     CreatorRegistry& registry = Registry();
     CHECK_EQ(registry.count(type), 1) << "Unknown solver type: " << type
@@ -108,13 +108,13 @@ class SolverRegistry {
 };
 
 
-template <typename Dtype>
+template <typename Dtype, typename Mtype>
 class SolverRegisterer {
  public:
   SolverRegisterer(const string& type,
-      Solver<Dtype>* (*creator)(const SolverParameter&)) {
+      Solver<Dtype,Mtype>* (*creator)(const SolverParameter&)) {
     // LOG(INFO) << "Registering solver type: " << type;
-    SolverRegistry<Dtype>::AddCreator(type, creator);
+    SolverRegistry<Dtype,Mtype>::AddCreator(type, creator);
   }
 };
 
@@ -124,11 +124,11 @@ class SolverRegisterer {
   static SolverRegisterer<double> g_creator_d_##type(#type, creator<double>)   \
 
 #define REGISTER_SOLVER_CLASS(type)                                            \
-  template <typename Dtype>                                                    \
-  Solver<Dtype>* Creator_##type##Solver(                                       \
+  template <typename Dtype, typename Mtype>                                    \
+  Solver<Dtype,Mtype>* Creator_##type##Solver(                                 \
       const SolverParameter& param)                                            \
   {                                                                            \
-    return new type##Solver<Dtype>(param);                                     \
+    return new type##Solver<Dtype,Mtype>(param);                               \
   }                                                                            \
   REGISTER_SOLVER_CREATOR(type, Creator_##type##Solver)
 

@@ -507,7 +507,7 @@ public:
         bottom2.push_back(im_info);
 
         // Fill bottom blob
-        ifstream jsonFile("/home/oscar/bottom");
+        ifstream jsonFile("/home/oscar/tmp/bottom");
         ptree pt;
         read_json(jsonFile, pt);
         int i = 0;

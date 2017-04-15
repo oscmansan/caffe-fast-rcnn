@@ -6,3 +6,6 @@ from .classifier import Classifier
 from .detector import Detector
 from . import io
 from .net_spec import layers, params, NetSpec, to_proto'''
+from .pycaffe import Net
+from ._caffe_layer import set_mode_gpu, set_device
+from .proto.caffe_pb2 import TRAIN, TEST

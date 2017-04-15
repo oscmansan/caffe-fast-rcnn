@@ -18,7 +18,7 @@ template<class Data>
 herr_t hdf5_load(hid_t file_id, const string& dataset_name, Data* data);
   
 template<class Blob>
-void hdf5_load_nd_dataset(hid_t file_id, const char* dataset_name_,
+void hdf5_load_nd_dataset(hid_t file_id, const char* dataset_name,
 			  int min_dim, int max_dim, Blob* blob) {
   blob->Reshape(hdf5_load_nd_dataset_helper(file_id, dataset_name, min_dim, max_dim));
   herr_t status = hdf5_load(file_id, dataset_name, blob->mutable_cpu_data());
