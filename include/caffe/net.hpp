@@ -46,9 +46,9 @@ class Net {
    * the middle may be incorrect if all of the layers of a fan-in are not
    * included.
    */
-  Mtype ForwardFromTo(int start, int end);
-  Mtype ForwardFrom(int start);
-  Mtype ForwardTo(int end);
+  void ForwardFromTo(int start, int end);
+  void ForwardFrom(int start);
+  void ForwardTo(int end);
   /// @brief Run forward using a set of bottom blobs, and return the result.
   const vector<Blob<Dtype,Mtype>*>& Forward(const vector<Blob<Dtype,Mtype>* > & bottom,
       Mtype* loss = NULL);

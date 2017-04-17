@@ -562,7 +562,7 @@ void Net<Dtype,Mtype>::AppendParam(const NetParameter& param, const int layer_id
 }
 
 template <typename Dtype, typename Mtype>
-Mtype Net<Dtype,Mtype>::ForwardFromTo(int start, int end) {
+void Net<Dtype,Mtype>::ForwardFromTo(int start, int end) {
   CHECK_GE(start, 0);
   CHECK_LT(end, layers_.size());
   Mtype loss = Get<Mtype>(0);
@@ -573,27 +573,28 @@ Mtype Net<Dtype,Mtype>::ForwardFromTo(int start, int end) {
   }
   for (int i = start; i <= end; ++i) {
     // LOG(ERROR) << "Forwarding " << layer_names_[i];
+    std::cout << "Forwarding " << layer_names_[i] << "(" << layers_[i]->type() << ")" << std::endl;
     Mtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
     loss += layer_loss;
     if (debug_info_) { ForwardDebugInfo(i); }
   }
-  return loss;
+  //return loss;
 }
 
 template <typename Dtype, typename Mtype>
-Mtype Net<Dtype,Mtype>::ForwardFrom(int start) {
-  return ForwardFromTo(start, layers_.size() - 1);
+void Net<Dtype,Mtype>::ForwardFrom(int start) {
+  /*return */ForwardFromTo(start, layers_.size() - 1);
 }
 
 template <typename Dtype, typename Mtype>
-Mtype Net<Dtype,Mtype>::ForwardTo(int end) {
-  return ForwardFromTo(0, end);
+void Net<Dtype,Mtype>::ForwardTo(int end) {
+  /*return */ForwardFromTo(0, end);
 }
 
 template <typename Dtype, typename Mtype>
 const vector<Blob<Dtype,Mtype>*>& Net<Dtype,Mtype>::ForwardPrefilled(Mtype* loss) {
   if (loss != NULL) {
-    *loss = ForwardFromTo(0, layers_.size() - 1);
+    /**loss = */ForwardFromTo(0, layers_.size() - 1);
   } else {
     ForwardFromTo(0, layers_.size() - 1);
   }

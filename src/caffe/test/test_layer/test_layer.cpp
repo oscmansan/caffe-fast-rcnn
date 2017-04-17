@@ -538,7 +538,7 @@ public:
         python_param->set_param_str("'feat_stride': 16");
 
         // Create layer
-        PythonLayer<float,float>* layer = (PythonLayer<float,float>*) LayerRegistry<float,float>::CreateLayer(layer_param).get();
+        Layer<Dtype,Mtype>* layer = LayerRegistry<Dtype,Mtype>::CreateLayer(layer_param).get();
 
         // Run forward pass
         timespec start,end,elapsed;

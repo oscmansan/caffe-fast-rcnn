@@ -39,9 +39,9 @@ namespace bp = boost::python;
 namespace caffe {
 
 // For Python, for now, we'll just always use float as the type.
-typedef float Dtype;
-typedef float Mtype;
-const int NPY_DTYPE = NPY_FLOAT32;
+typedef float16 Dtype;
+typedef float16 Mtype;
+const int NPY_DTYPE = NPY_FLOAT16;
 
 // Selecting mode.
 void set_mode_cpu() { Caffe::set_mode(Caffe::CPU); }
@@ -58,28 +58,6 @@ static void CheckFile(const string& filename) {
       throw std::runtime_error("Could not open file " + filename);
     }
     f.close();
-}
-
-void CheckContiguousArray(PyArrayObject* arr, string name,
-    int channels, int height, int width) {
-  if (!(PyArray_FLAGS(arr) & NPY_ARRAY_C_CONTIGUOUS)) {
-    throw std::runtime_error(name + " must be C contiguous");
-  }
-  if (PyArray_NDIM(arr) != 4) {
-    throw std::runtime_error(name + " must be 4-d");
-  }
-  if (PyArray_TYPE(arr) != NPY_FLOAT32) {
-    throw std::runtime_error(name + " must be float32");
-  }
-  if (PyArray_DIMS(arr)[1] != channels) {
-    throw std::runtime_error(name + " has wrong number of channels");
-  }
-  if (PyArray_DIMS(arr)[2] != height) {
-    throw std::runtime_error(name + " has wrong height");
-  }
-  if (PyArray_DIMS(arr)[3] != width) {
-    throw std::runtime_error(name + " has wrong width");
-  }
 }
 
 // Net constructor for passing phase as int
@@ -109,38 +87,6 @@ void Net_Save(const Net<Dtype,Mtype>& net, string filename) {
   net.ToProto(&net_param, false);
   WriteProtoToBinaryFile(net_param, filename.c_str());
 }
-
-/*void Net_SetInputArrays(Net<Dtype,Mtype>* net, bp::object data_obj,
-    bp::object labels_obj) {
-  // check that this network has an input MemoryDataLayer
-  shared_ptr<MemoryDataLayer<Dtype> > md_layer =
-    boost::dynamic_pointer_cast<MemoryDataLayer<Dtype> >(net->layers()[0]);
-  if (!md_layer) {
-    throw std::runtime_error("set_input_arrays may only be called if the"
-        " first layer is a MemoryDataLayer");
-  }
-
-  // check that we were passed appropriately-sized contiguous memory
-  PyArrayObject* data_arr =
-      reinterpret_cast<PyArrayObject*>(data_obj.ptr());
-  PyArrayObject* labels_arr =
-      reinterpret_cast<PyArrayObject*>(labels_obj.ptr());
-  CheckContiguousArray(data_arr, "data array", md_layer->channels(),
-      md_layer->height(), md_layer->width());
-  CheckContiguousArray(labels_arr, "labels array", 1, 1, 1);
-  if (PyArray_DIMS(data_arr)[0] != PyArray_DIMS(labels_arr)[0]) {
-    throw std::runtime_error("data and labels must have the same first"
-        " dimension");
-  }
-  if (PyArray_DIMS(data_arr)[0] % md_layer->batch_size() != 0) {
-    throw std::runtime_error("first dimensions of input arrays must be a"
-        " multiple of batch size");
-  }
-
-  md_layer->Reset(static_cast<Dtype*>(PyArray_DATA(data_arr)),
-      static_cast<Dtype*>(PyArray_DATA(labels_arr)),
-      PyArray_DIMS(data_arr)[0]);
-}*/
 
 struct NdarrayConverterGenerator {
   template <typename T> struct apply;
@@ -172,7 +118,7 @@ struct NdarrayCallPolicies : public bp::default_call_policies {
     const int num_axes = blob->num_axes();
     vector<npy_intp> dims(blob->shape().begin(), blob->shape().end());
     PyObject *arr_obj = PyArray_SimpleNewFromData(num_axes, dims.data(),
-                                                  NPY_FLOAT32, data);
+                                                  NPY_DTYPE, data);
     // SetBaseObject steals a ref, so we need to INCREF.
     Py_INCREF(pyblob.ptr());
     PyArray_SetBaseObject(reinterpret_cast<PyArrayObject*>(arr_obj),
@@ -210,6 +156,14 @@ bp::object BlobVec_add_blob(bp::tuple args, bp::dict kwargs) {
   return bp::object();
 }
 
+struct float16_to_python
+{
+    static PyObject* convert(float16 const& x)
+    {
+        return bp::incref(bp::object(x).ptr());
+    }
+};
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(SolveOverloads, Solve, 0, 1);
 
 BOOST_PYTHON_MODULE(_caffe_layer) {
@@ -217,6 +171,8 @@ BOOST_PYTHON_MODULE(_caffe_layer) {
   // in Python
 
   bp::scope().attr("__version__") = AS_STRING(CAFFE_VERSION);
+  
+  //bp::to_python_converter<float16,float16_to_python>();
 
   // Caffe utility functions
   bp::def("set_mode_cpu", &set_mode_cpu);
@@ -261,8 +217,6 @@ BOOST_PYTHON_MODULE(_caffe_layer) {
     .add_property("_outputs",
         bp::make_function(&Net<Dtype,Mtype>::output_blob_indices,
         bp::return_value_policy<bp::copy_const_reference>()))
-    /*.def("_set_input_arrays", &Net_SetInputArrays,
-        bp::with_custodian_and_ward<1, 2, bp::with_custodian_and_ward<1, 3> >())*/
     .def("save", &Net_Save);
 
   bp::class_<Blob<Dtype, Mtype>, shared_ptr<Blob<Dtype, Mtype> >, boost::noncopyable>(
