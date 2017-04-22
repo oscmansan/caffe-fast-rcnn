@@ -19,6 +19,8 @@
 
 #include "caffe/test/test_caffe_main.hpp"
 
+#include "/media/ubuntu/scratch/power_tools/Regions.h"
+
 namespace caffe {
 
 template <typename Dtype, typename Mtype>
@@ -571,13 +573,16 @@ void Net<Dtype,Mtype>::ForwardFromTo(int start, int end) {
       InputDebugInfo(i);
     }
   }
+  START_REGION("Forward");
   for (int i = start; i <= end; ++i) {
     // LOG(ERROR) << "Forwarding " << layer_names_[i];
-    std::cout << "Forwarding " << layer_names_[i] << "(" << layers_[i]->type() << ")" << std::endl;
+    //START_REGION(layer_names_[i].c_str());
     Mtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
+    //STOP_REGION(layer_names_[i].c_str());
     loss += layer_loss;
     if (debug_info_) { ForwardDebugInfo(i); }
   }
+  STOP_REGION("Forward");
   //return loss;
 }
 

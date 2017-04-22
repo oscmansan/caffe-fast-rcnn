@@ -45,17 +45,20 @@ public:
     void ConvolutionLayerTest() {
         cout << "## Testing ConvolutionLayer ############" << endl;
 
+        Blob<Dtype,Mtype>* blb = new Blob<Dtype,Mtype>(1,512,36,63);
+        bottom[0] = blb;
+
         // Fill bottom blob
-        init_rand(bottom_blob); 
-        cout << "I: " << to_string(bottom_blob->shape()) << endl;
-        clog << to_string(bottom_blob) << endl;
+        init_rand(blb); 
+        cout << "I: " << to_string(blb->shape()) << endl;
+        clog << to_string(blb) << endl;
 
         // Set up layer parameters
         LayerParameter layer_param;
         ConvolutionParameter* conv_param = layer_param.mutable_convolution_param();
-        conv_param->add_kernel_size(3);
-        conv_param->add_stride(2);
-        conv_param->set_num_output(4); // number of filters
+        conv_param->add_kernel_size(1);
+        conv_param->add_stride(1);
+        conv_param->set_num_output(36); // number of filters
         //conv_param->mutable_weight_filler()->set_type("constant"); // type of filters
         //conv_param->mutable_weight_filler()->set_value(1.0);
         //conv_param->mutable_weight_filler()->set_type("gaussian");
@@ -64,10 +67,10 @@ public:
         std::shared_ptr<Layer<Dtype,Mtype> > layer(new ConvolutionLayer<Dtype,Mtype>(layer_param));
         layer->SetUp(bottom,top);
 
-        assert(top_blob->num() == num);
-        assert(top_blob->channels() == 4);
-        assert(top_blob->height() == 1);
-        assert(top_blob->width() == 2);
+        assert(top_blob->num() == 1);
+        assert(top_blob->channels() == 36);
+        assert(top_blob->height() == 36);
+        assert(top_blob->width() == 63);
 
         Blob<Dtype,Mtype>* weights = layer->blobs()[0].get();
         init_rand(weights);
@@ -82,7 +85,7 @@ public:
         cout << "O: " << to_string(top_blob->shape()) << endl;
         clog << to_string(top_blob) << endl;
         elapsed = diff(start,end);
-        cout<<"time: "<<elapsed.tv_sec*1000000000+elapsed.tv_nsec<<endl;
+        cout<<"time: "<<elapsed.tv_sec+elapsed.tv_nsec/1000000000.0<<endl;
     }
 
     void InnerProductLayerTest() {
@@ -663,7 +666,7 @@ private:
 
 int main() {
     LayerTest test;
-    //test.ConvolutionLayerTest();
+    test.ConvolutionLayerTest();
     //test.InnerProductLayerTest();
     //test.PoolingLayerTest();
     //test.SplitLayerTest();
@@ -671,5 +674,5 @@ int main() {
     //test.SoftmaxLayerTest();
     //test.ReshapeLayerTest();
     //test.ROIPoolingLayerTest();
-    test.PythonLayerTest();
+    //test.PythonLayerTest();
 }
