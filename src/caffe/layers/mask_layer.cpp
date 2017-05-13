@@ -12,8 +12,6 @@ namespace caffe {
 template <typename Dtype>
 void MaskLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  const int num_output = this->layer_param_.inner_product_param().num_output();
-  N_ = num_output;
   const int axis = bottom[0]->CanonicalAxisIndex(
       this->layer_param_.inner_product_param().axis());
   // Dimensions starting from "axis" are "flattened" into a single
@@ -27,7 +25,7 @@ void MaskLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     this->blobs_.resize(1);
     // Intialize the weight
     vector<int> weight_shape(2);
-    weight_shape[0] = N_;
+    weight_shape[0] = K_;
     weight_shape[1] = K_;
     this->blobs_[0].reset(new Blob<Dtype>(weight_shape));
     // fill the weights
@@ -36,6 +34,9 @@ void MaskLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     weight_filler->Fill(this->blobs_[0].get());
   }  // parameter initialization
   this->param_propagate_down_.resize(this->blobs_.size(), true);
+
+  identity = new Blob<Dtype>(1,1,K_,K_);
+  identity_matrix(K_, identity->mutable_cpu_data());
 }
 
 template <typename Dtype>
@@ -51,10 +52,10 @@ void MaskLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   // number of these is M_, the product over these dimensions.
   M_ = bottom[0]->count(0, axis);
   // The top shape will be the bottom shape with the flattened axes dropped,
-  // and replaced by a single axis with dimension num_output (N_).
+  // and replaced by a single axis with dimension K_.
   vector<int> top_shape = bottom[0]->shape();
   top_shape.resize(axis + 1);
-  top_shape[axis] = N_;
+  top_shape[axis] = K_;
   top[0]->Reshape(top_shape);
 }
 
@@ -66,6 +67,15 @@ template <typename Dtype>
 void MaskLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down,
     const vector<Blob<Dtype>*>& bottom) {}
+
+template <typename Dtype>
+void MaskLayer<Dtype>::identity_matrix(int N, Dtype* identity) {
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+	    identity[i*N+j] = i==j ? 1 : 0;
+	}
+    }
+}
 
 #ifdef CPU_ONLY
 STUB_GPU(MaskLayer);

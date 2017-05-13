@@ -686,7 +686,7 @@ class MaskLayer : public Layer<Dtype> {
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline const char* type() const { return "MaskProduct"; }
+  virtual inline const char* type() const { return "Mask"; }
   virtual inline int ExactNumBottomBlobs() const { return 1; }
   virtual inline int ExactNumTopBlobs() const { return 1; }
 
@@ -702,7 +702,12 @@ class MaskLayer : public Layer<Dtype> {
 
   int M_;
   int K_;
-  int N_;
+  Blob<Dtype>* identity;
+
+ private:
+  void identity_matrix(int N, Dtype* identity);
+
+
 };
 
 }  // namespace caffe
