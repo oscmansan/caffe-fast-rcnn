@@ -42,10 +42,11 @@ void MaskLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         top_diff, this->blobs_[0]->gpu_data(), (Dtype)0.,
         bottom[0]->mutable_gpu_diff());
   }
-  
+
   // Make the weights matrix diagonal
-  caffe_gpu_gemm<Dtype>(CblasNoTrans,CblasNoTrans, K_, K_, K_, (Dtype)1.,
-        this->blobs_[0]->gpu_data(), identity->gpu_data(), (Dtype)0., this->blobs_[0]->mutable_gpu_data());
+  int N = K_*K_;
+  Blob<Dtype>* weights = this->blobs_[0].get();
+  caffe_gpu_mul<Dtype>(N, weights->gpu_data(), identity->gpu_data(), weights->mutable_gpu_data());
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(MaskLayer);

@@ -6,16 +6,17 @@
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/filler.hpp"
-#include "caffe/vision_layers.hpp"
+#include "caffe/common_layers.hpp"
 
 #include "caffe/test/test_caffe_main.hpp"
-#include "caffe/test/test_gradient_check_util.hpp"
 
 namespace caffe {
 
 #ifndef CPU_ONLY
 extern cudaDeviceProp CAFFE_TEST_CUDA_PROP;
 #endif
+
+typedef ::testing::Types<GPUDevice<float>, GPUDevice<double> > TestDtypesAndDevicesGPUOnly;
 
 template <typename TypeParam>
 class MaskLayerTest : public MultiDeviceTest<TypeParam> {
@@ -43,7 +44,7 @@ class MaskLayerTest : public MultiDeviceTest<TypeParam> {
   vector<Blob<Dtype>*> blob_top_vec_;
 };
 
-TYPED_TEST_CASE(MaskLayerTest, TestDtypesAndDevices);
+TYPED_TEST_CASE(MaskLayerTest, TestDtypesAndDevicesGPUOnly);
 
 TYPED_TEST(MaskLayerTest, TestSetUp) {
   typedef typename TypeParam::Dtype Dtype;
@@ -67,8 +68,9 @@ TYPED_TEST(MaskLayerTest, TestBackward) {
       layer_param.mutable_inner_product_param();
   FillerParameter* filler_param = 
       inner_product_param->mutable_weight_filler();
+  //filler_param->set_type("constant");
+  //filler_param->set_value(1.);
   filler_param->set_type("uniform");
-  filler_param->set_value(1.);
   vector<bool> bottom_need_backward;
   bottom_need_backward.resize(this->blob_bottom_vec_.size());
   for (int i = 0; i < bottom_need_backward.size(); ++i) {
@@ -80,12 +82,21 @@ TYPED_TEST(MaskLayerTest, TestBackward) {
   layer->SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
   layer->Backward(this->blob_bottom_vec_, bottom_need_backward, this->blob_top_vec_);
 
-  const Dtype* data = layer->blobs()[0]->cpu_data();
-  const int count = layer->blobs()[0]->count();
-  for (int i = 0; i < count; ++i) {
-      std::cout << data[i] << " ";
+  Blob<Dtype>* weights = layer->blobs()[0].get();
+  const Dtype* data = weights->cpu_data();
+  vector<int> shape = weights->shape();
+  EXPECT_EQ(shape[0], shape[1]);
+  for (int i = 0; i < shape[0]; ++i) {
+    for (int j = 0; j < shape[1]; ++j) {
+      Dtype x = data[i*shape[0]+j];
+      if (i == j) {
+        EXPECT_GE(x, 0);
+      }
+      else {
+        EXPECT_EQ(x, 0);
+      }
+    }
   }
-  std::cout << std::endl;
 }
 
 }  // namespace caffe
