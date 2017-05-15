@@ -35,7 +35,10 @@ void MaskLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   }  // parameter initialization
   this->param_propagate_down_.resize(this->blobs_.size(), true);
 
-  identity = new Blob<Dtype>(1,1,K_,K_);
+  vector<int> identity_shape(2);
+  identity_shape[0] = K_;
+  identity_shape[1] = K_;
+  identity = new Blob<Dtype>(identity_shape);
   identity_matrix(K_, identity->mutable_cpu_data());
 }
 

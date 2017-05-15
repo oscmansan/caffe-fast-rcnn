@@ -41,6 +41,24 @@ int main(int argc, char* argv[]) {
 		count *= shape[k];
 	    }
 	    cout << count << " ";
+	    
+	    if (source_layer.type() == "Mask") {
+	        int N = shape[0];
+	        int C = shape[1];
+	        int H = shape[2];
+	        int W = shape[3];
+	        for (int i = 0; i < N; ++i) {
+		    for (int j = 0; j < C; ++j) {
+		        for (int k = 0; k < H; ++k) {
+			    for (int l = 0; l < W; ++l) {
+			        cout << proto.data(i*C*H*W+j*H*W+k*W+l) << " ";
+			    }
+			    cout << endl;
+		        }
+		        cout << endl;
+		    }
+	        }
+	    }
 	}
 	cout << endl;
     }

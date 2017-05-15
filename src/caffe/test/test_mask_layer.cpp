@@ -1,5 +1,6 @@
 #include <cstring>
 #include <vector>
+#include <google/protobuf/text_format.h>
 
 #include "gtest/gtest.h"
 
@@ -59,7 +60,7 @@ TYPED_TEST(MaskLayerTest, TestSetUp) {
   EXPECT_EQ(this->blob_top_->channels(), 3*4*5);
 }
 
-TYPED_TEST(MaskLayerTest, TestBackward) {
+TYPED_TEST(MaskLayerTest, TestForwardBackward) {
   typedef typename TypeParam::Dtype Dtype;
   this->blob_bottom_vec_.push_back(this->blob_bottom_);
   
@@ -80,6 +81,7 @@ TYPED_TEST(MaskLayerTest, TestBackward) {
   shared_ptr<MaskLayer<Dtype> > layer(
         new MaskLayer<Dtype>(layer_param));
   layer->SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer->Forward(this->blob_bottom_vec_, this->blob_top_vec_);
   layer->Backward(this->blob_bottom_vec_, bottom_need_backward, this->blob_top_vec_);
 
   Blob<Dtype>* weights = layer->blobs()[0].get();
@@ -91,6 +93,47 @@ TYPED_TEST(MaskLayerTest, TestBackward) {
       Dtype x = data[i*shape[0]+j];
       if (i == j) {
         EXPECT_GE(x, 0);
+      }
+      else {
+        EXPECT_EQ(x, 0);
+      }
+    }
+  }
+}
+
+TYPED_TEST(MaskLayerTest, TestReadLayerParamsFromFile) { 
+  typedef typename TypeParam::Dtype Dtype;
+  this->blob_bottom_vec_.push_back(this->blob_bottom_);
+
+  string layer_string = 
+    "name: \"fc6_mask\" \
+     type: \"Mask\" \
+     bottom: \"fc6\" \
+     top: \"fc6\" \
+     param { \
+       lr_mult: 1 \
+     } \
+     inner_product_param { \
+       weight_filler { \
+         type: \"constant\" \
+         value: 1 \
+       } \
+     }";  
+  LayerParameter layer_param;
+  google::protobuf::TextFormat::ParseFromString(layer_string, &layer_param);
+
+  shared_ptr<MaskLayer<Dtype> > layer(new MaskLayer<Dtype>(layer_param));
+  layer->SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
+  layer->Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+
+  Blob<Dtype>* weights = layer->blobs()[0].get();
+  const Dtype* data = weights->cpu_data();
+  vector<int> shape = weights->shape();
+  for (int i = 0; i < shape[0]; ++i) {
+    for (int j = 0; j < shape[1]; ++j) {
+      Dtype x = data[i*shape[0]+j];
+      if (i == j) {
+        EXPECT_EQ(x, 1);
       }
       else {
         EXPECT_EQ(x, 0);
