@@ -17,8 +17,7 @@ void MaskLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   Blob<Dtype>* weights = this->blobs_[0].get();
 
   // Make the weights matrix diagonal
-  //caffe_gpu_mul<Dtype>(K_*K_, weights->gpu_data(), identity->gpu_data(), weights->mutable_gpu_data());
-  weights->CopyFrom(*identity);
+  caffe_gpu_mul<Dtype>(K_*K_, weights->gpu_data(), identity->gpu_data(), weights->mutable_gpu_data());
 
   if (M_ == 1) {
     caffe_gpu_gemv<Dtype>(CblasNoTrans, K_, K_, (Dtype)1.,
