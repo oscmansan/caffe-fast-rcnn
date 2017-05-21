@@ -5,6 +5,32 @@ using namespace std;
 #include "caffe/util/io.hpp"
 using namespace caffe;
 
+void print_weights(BlobProto proto, const vector<int> &shape) {
+    int N = shape[0];
+    int C = shape[1];
+    int H = shape[2];
+    int W = shape[3];
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < C; ++j) {
+	    for (int k = 0; k < H; ++k) {
+	        for (int l = 0; l < W; ++l) {
+		    cout << proto.data(i*C*H*W+j*H*W+k*W+l) << " ";
+		}
+		cout << endl;
+            }
+	    cout << endl;
+	}
+    }
+}
+
+void print_shape(const vector<int> &shape) {
+    cout << "(";
+    for (int i = 0; i < shape.size(); ++i) {
+        cout << shape[i] << ",";
+    }
+    cout << ")";
+}
+
 int main(int argc, char* argv[]) {
     NetParameter param;
     string file = argv[1];
@@ -36,29 +62,7 @@ int main(int argc, char* argv[]) {
        	   	}
     	    }
 	   
-	    int count = shape[0]; 
-	    for (int k = 1; k < shape.size(); ++k) {
-		count *= shape[k];
-	    }
-	    cout << count << " ";
-	    
-	    if (source_layer.type() == "Mask") {
-	        int N = shape[0];
-	        int C = shape[1];
-	        int H = shape[2];
-	        int W = shape[3];
-	        for (int i = 0; i < N; ++i) {
-		    for (int j = 0; j < C; ++j) {
-		        for (int k = 0; k < H; ++k) {
-			    for (int l = 0; l < W; ++l) {
-			        cout << proto.data(i*C*H*W+j*H*W+k*W+l) << " ";
-			    }
-			    cout << endl;
-		        }
-		        cout << endl;
-		    }
-	        }
-	    }
+	    print_shape(shape);
 	}
 	cout << endl;
     }
